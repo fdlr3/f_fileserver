@@ -13,19 +13,19 @@
 *fn means file name*
 
 1. PUSH [fn]			= 1 << 0
--push a file to the server
+   -push a file to the server
 
 2. GET  [fn]			= 1 << 1
--get a file from the server
+   -get a file from the server
 
 3. REM  [fn] 			= 1 << 2
--removes file
+   -removes file
 
 4. UP	[server_fn] [local_fn]  = 1 << 3
--update a file on the server
+   -update a file on the server
 
 5. DIR 				= 1 << 4
--names of all the files in your server folder
+   -names of all the files in your server folder
 
 *GET and DIR first send a 4BYTE message that conaints the file size in little endian
 type uint32_t*
