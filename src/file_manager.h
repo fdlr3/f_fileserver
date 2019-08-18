@@ -11,6 +11,7 @@
 #define ROOT "/home/duler/Desktop/Root/"
 #define D_BSD_SOURCE
 #define FILE_CHUNK 1024
+#define MAX_FILE_SIZE INT32_MAX
 #define ARG_SIZE 100
 typedef uint8_t BYTE;
 
@@ -40,6 +41,7 @@ typedef enum{
 } instruction_flag;
 
 typedef struct{
+    bool valid;
     instruction_flag flag;
     uint8_t flag_c;
     char arg0[ARG_SIZE];

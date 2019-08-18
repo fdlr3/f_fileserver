@@ -18,20 +18,20 @@ parse_num(BYTE* arr, uint32_t n){
 
 uint32_t 
 file_size(FILE *fp){
-    long filelen = 0;
+    unsigned long filelen = 0;
     fseek(fp, 0, SEEK_END); // seek to end of file
     filelen = ftell(fp); // get current file pointer
     fseek(fp, 0, SEEK_SET); // seek back to beginning of file
-    return filelen;
+    return (uint32_t)filelen;
 }
 
 Instruction 
 init_instruction(BYTE* barr){
     Instruction ins;
+    ins.valid = true;
     memset(&ins, 0, sizeof(Instruction));
     ins.fptr = NULL;
-    memset(ins.arg0, '\0', ARG_SIZE);
-    memset(ins.arg1, '\0', ARG_SIZE);
+    size_t root_len = strlen(ROOT);
 
     //1. 1BYTE instruction
     ins.flag = (instruction_flag)barr[0];
@@ -39,19 +39,19 @@ init_instruction(BYTE* barr){
     ins.flag_c = (uint8_t)barr[1];
     if(ins.flag_c < 0 && ins.flag_c > 2) {
         Log("Wrong number of arguments sent.");
-        exit(EXIT_FAILURE);
+        ins.valid = false;
     }
     //3. 4BYTE file size (uint32_t)
     memcpy(&(ins.file_size), barr+2, sizeof(uint32_t));
     //4. 100BYTE arg0 (has to have null terminate)
     if(ins.flag_c > 0){
-        strcpy(ins.arg0, ROOT);
-        strcat(ins.arg0, barr+6);
+        memcpy(ins.arg0, ROOT, root_len);
+        strcat(ins.arg0 + root_len, barr+6);
     }
     //5. 100BYTE arg1 (has to have null terminate)
     if(ins.flag_c == 2){
-        strcpy(ins.arg1, ROOT);
-        strcat(ins.arg1, barr+106);
+        memcpy(ins.arg0, ROOT, root_len);
+        strcat(ins.arg0 + root_len, barr+106);
     }
 
     Log("Instruction recieved with data:\nInstruction flag: %s,\nflag count: %u"

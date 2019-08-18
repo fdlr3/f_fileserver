@@ -1,9 +1,9 @@
 #include <stdio.h>
 #include <stdlib.h>
 #include <string.h>
-#include "file_manager.h"
-#include "server.h"
-#include "logger.h"
+#include "src/file_manager.h"
+#include "src/server.h"
+#include "src/logger.h"
 #define PORT_N 1550
 
 int main(){

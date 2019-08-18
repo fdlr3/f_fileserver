@@ -92,6 +92,10 @@ server_IO(f_client* fc){
             return;
         }
         ins = init_instruction(ins_buffer);
+        if(!ins.valid) {
+            Log("Error in instruction.");
+            continue;
+        }
 
         switch(ins.flag){
             case if_PUSH:{
