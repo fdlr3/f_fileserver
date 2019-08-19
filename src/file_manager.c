@@ -2,8 +2,6 @@
 #include <stdlib.h>
 #include "logger.h"
 
-
-
 uint32_t 
 parse_4_bytearr(BYTE* arr){
     uint32_t size = 0;
@@ -19,25 +17,26 @@ parse_num(BYTE* arr, uint32_t n){
 uint32_t 
 file_size(FILE *fp){
     unsigned long filelen = 0;
-    fseek(fp, 0, SEEK_END); // seek to end of file
-    filelen = ftell(fp); // get current file pointer
-    fseek(fp, 0, SEEK_SET); // seek back to beginning of file
+    fseek(fp, 0, SEEK_END); 
+    filelen = ftell(fp); 
+    fseek(fp, 0, SEEK_SET); 
     return (uint32_t)filelen;
 }
 
 Instruction 
 init_instruction(BYTE* barr){
     Instruction ins;
-    ins.valid = true;
+    size_t      root_len = strlen(ROOT);
+
     memset(&ins, 0, sizeof(Instruction));
+    ins.valid = true;
     ins.fptr = NULL;
-    size_t root_len = strlen(ROOT);
 
     //1. 1BYTE instruction
     ins.flag = (instruction_flag)barr[0];
     //2. 1BYTE number of args (uint8_t)
     ins.flag_c = (uint8_t)barr[1];
-    if(ins.flag_c < 0 && ins.flag_c > 2) {
+    if(ins.flag_c < 0 || ins.flag_c > 2) {
         Log("Wrong number of arguments sent.");
         ins.valid = false;
     }
@@ -54,7 +53,7 @@ init_instruction(BYTE* barr){
         strcat(ins.arg0 + root_len, barr+106);
     }
 
-    Log("Instruction recieved with data:\nInstruction flag: %s,\nflag count: %u"
+    Log("\nInstruction recieved with data:\nInstruction flag: %u,\nflag count: %u\n"
     "file size: %u,\nargument 1: %s,\nanargument 2: %s",
     ins.flag, 
     ins.flag_c, 
@@ -79,9 +78,11 @@ get_instruction_name(instruction_flag flag){
 
 BYTE*
 get_dir(Instruction *ins) {
-    struct dirent* d;
-    size_t length = 0, data_size = FILE_CHUNK;
-    BYTE* data = malloc(FILE_CHUNK);
+    struct dirent*  d;
+    size_t          length = 0, 
+                    data_size = FILE_CHUNK;
+    BYTE*           data = malloc(FILE_CHUNK);
+
     if(!data) exit(1);
     *data = '\0';
 
@@ -104,7 +105,6 @@ get_dir(Instruction *ins) {
         }
     }
     return data;
-    //closedir(d);
 }
 
 

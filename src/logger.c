@@ -46,5 +46,6 @@ void Log(const char* format, ...){
         printf("Couldnt log message %s", msg);
     }
     fprintf(__log.logfp, "%s\n", msg);
+    printf("%s\n", msg);
     fclose(__log.logfp);
 }

@@ -8,6 +8,7 @@
 #include <sys/types.h> 
 #include <sys/socket.h>
 #include <errno.h>
+#include <arpa/inet.h>
 
 static void 
 error(const char *msg)
@@ -33,14 +34,16 @@ start_server(int16_t port, f_server *server){
     //else it returns the file descriptor
     int* s_fd = &(server->server_fd);
     *s_fd = socket(AF_INET, SOCK_STREAM, 0);
+    char str[INET_ADDRSTRLEN];
     if(*s_fd < 0){
-        Log("Error opening socket on address: %u with port: %u",
-        (unsigned int)sd->sin_addr.s_addr,
+        
+        Log("Error opening socket on address: %s with port: %u",
+        inet_ntoa(sd->sin_addr),
         (unsigned int)sd->sin_port);
         exit(EXIT_FAILURE);
     }
-    Log("Opened socket on address: %u with port: %u.", 
-    (unsigned int)sd->sin_addr.s_addr,
+    Log("Opened socket on address: %s with port: %u.", 
+    inet_ntoa(sd->sin_addr),
     (unsigned int)sd->sin_port);
 
     //binds the local address to the socket
@@ -57,23 +60,21 @@ start_server(int16_t port, f_server *server){
 void 
 listen_server(void *server){
     f_server *serverp = server;
+    char str[INET_ADDRSTRLEN];
 
-    Log("Listening for new client.");
-    //if return -1 false, else true
     if (listen(serverp->server_fd, 1) == -1) {
         Log("Error listening for client.");
     }
-    Log("Client listen successful.");
-    //accepts connections and sets a new file descriptor "newsockfd"
-    //if return is -1 its an error
+    Log("Listening for new client.");
+
     serverp->fc.fd = accept(serverp->server_fd,
                     (struct sockaddr *)&(serverp->fc.addr),
                     &serverp->fc.clilen);
     if (serverp->server_fd < 0) {
         Log("Error accepting cliet.");
     }
-    Log("Client with address: %u and file descriptor: %u successfully accepted.",
-    (unsigned int)serverp->fc.addr.sin_addr.s_addr,
+    Log("Client with address: %s and file descriptor: %u successfully accepted.",
+    inet_ntoa(serverp->server_addr.sin_addr),
     (unsigned int)serverp->fc.fd);
 }
 
@@ -175,11 +176,11 @@ close_server(void *server){
     close(serverp->fc.fd);
 }
 
-int 
+static int 
 send_file(FILE *fp, f_client* fc){
-    size_t read_size = FILE_CHUNK;
-    size_t n = 0;
-    BYTE file_buffer[FILE_CHUNK];
+    size_t  read_size   = FILE_CHUNK,
+            n = 0;
+    BYTE    file_buffer[FILE_CHUNK];
     
     while((n = fread(file_buffer, 1, read_size, fp)) > 0){
         send_data(fc->fd, file_buffer, n);
@@ -187,29 +188,35 @@ send_file(FILE *fp, f_client* fc){
     return 1;
 }
 
-int 
+static int 
 read_file(FILE *fp, f_client* fc, size_t size){
-    BYTE read_buffer[FILE_CHUNK];
-    size_t pack_size = size >= FILE_CHUNK ? FILE_CHUNK : size;
+    BYTE    read_buffer[FILE_CHUNK];
+    size_t  pack_size   = size >= FILE_CHUNK ? FILE_CHUNK : size,
+            data_read   = 0,
+            data_wrote  = 0;
+    Log("Reading file with size: %u bytes or %u MB.", size, size / 1000);
 
     while(size > 0){
         pack_size = size < FILE_CHUNK ? size : FILE_CHUNK;
         //read data
         int nn = read_data(fc->fd,read_buffer, pack_size);
         if(nn == 0) { return 0; }
+        else { data_read += nn; }
         //write to file
-        size_t n = fwrite(read_buffer, sizeof(BYTE), pack_size, fp);
+        data_wrote += fwrite(read_buffer, sizeof(BYTE), pack_size, fp);
         size = size >= pack_size ? size - pack_size : 0;
     }
+    Log("Read %u bytes and wrote %u bytes to file", data_read, data_wrote);
     return 1;
 }
 
-int 
+static int 
 send_data(int fd, BYTE* buffer, size_t n){
-    int offset = 0;
-    size_t sent = 0;
+    int     offset  = 0;
+    size_t  sent    = 0;
+
     while((sent = send(fd, buffer + offset, n, 0)) > 0 || sent == -1){
-        if(sent > 0){
+        if(sent > 0) {
             offset += sent;
             n -= sent;
         }
@@ -217,10 +224,11 @@ send_data(int fd, BYTE* buffer, size_t n){
     return (int)sent;
 }
 
-int
+static int
 read_data(int fd, BYTE* buffer, size_t n){
     int read_b = 0;
-    int result;
+    int result = 0;
+
     while (read_b < n)
     {
         result = read(fd, buffer + read_b, n - read_b);
@@ -231,4 +239,5 @@ read_data(int fd, BYTE* buffer, size_t n){
     }
     return read_b;
 }
+
 
