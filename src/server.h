@@ -9,7 +9,7 @@
 
 
 
-static void error(const char *msg);
+void error(const char *msg);
 
 typedef struct{
     int fd;
@@ -37,8 +37,8 @@ void listen_server(void *server);
 void server_IO(f_client *fc);
 void close_server(void *server);
 
-static int send_data(int fd, BYTE* buffer, size_t n);
-static int read_data(int fd, BYTE* buffer, size_t n);
-static int send_file(FILE *fp, f_client* fc);
-static int read_file(FILE *fp, f_client* fc, size_t size);
+int send_data(int fd, BYTE* buffer, size_t n);
+int read_data(int fd, BYTE* buffer, size_t n);
+int send_file(FILE *fp, f_client* fc);
+int read_file(FILE *fp, f_client* fc, size_t size);
 #endif
