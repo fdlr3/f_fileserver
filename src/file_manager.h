@@ -8,8 +8,8 @@
 #include <stdbool.h>
 #include <dirent.h>
 
-//#define ROOT "/home/duler/Desktop/Root/"
-#define ROOT "/home/pi/Root/"
+#define ROOT "/home/duler/Desktop/Root/"
+//#define ROOT "/home/pi/Root/"
 #define D_BSD_SOURCE
 #define FILE_CHUNK 1024
 #define MAX_FILE_SIZE INT32_MAX
@@ -60,5 +60,6 @@ uint32_t file_size(FILE *fp);
 BYTE *get_dir(Instruction *ins);
 char* get_instruction_name(instruction_flag flag);
 
+bool get_file_data(const char *file_path, __time_t* time, __off_t* size);
 
 #endif

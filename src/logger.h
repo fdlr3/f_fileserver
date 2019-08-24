@@ -5,8 +5,8 @@
 #include <stdio.h>
 #include <stdarg.h>
 
-//#define LOG_ROOT "/home/duler/Desktop/Root/Logs/"
-#define LOG_ROOT "/home/pi/Root/Logs/"
+#define LOG_ROOT "/home/duler/Desktop/Root/Logs/"
+//#define LOG_ROOT "/home/pi/Root/Logs/"
 
 void start_logger();
 void Log(const char* msg, ...);

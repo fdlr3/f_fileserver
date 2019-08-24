@@ -41,4 +41,5 @@ int send_data(int fd, BYTE* buffer, size_t n);
 int read_data(int fd, BYTE* buffer, size_t n);
 int send_file(FILE *fp, f_client* fc);
 int read_file(FILE *fp, f_client* fc, size_t size);
+
 #endif

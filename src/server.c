@@ -29,7 +29,6 @@ start_server(int16_t port, f_server *server){
     //else it returns the file descriptor
     int* s_fd = &(server->server_fd);
     *s_fd = socket(AF_INET, SOCK_STREAM, 0);
-    char str[INET_ADDRSTRLEN];
     if(*s_fd < 0){
         
         Log("Error opening socket on address: %s with port: %u",
@@ -55,7 +54,6 @@ start_server(int16_t port, f_server *server){
 void 
 listen_server(void *server){
     f_server *serverp = server;
-    char str[INET_ADDRSTRLEN];
 
     if (listen(serverp->server_fd, 1) == -1) {
         Log("Error listening for client.");
@@ -134,7 +132,7 @@ server_IO(f_client* fc){
                 ins.dirptr = opendir(ROOT);
                 if(ins.dirptr == NULL) { exit(EXIT_FAILURE); /*TODO ERROR */}
                 buffer = get_dir(&ins);
-                len = strlen(buffer);
+                len = strlen((char*)buffer);
                 cur_len = len;
                 //send data length
                 parse_num(buffer_len, len);
@@ -235,4 +233,8 @@ read_data(int fd, BYTE* buffer, size_t n){
     return read_b;
 }
 
-
+static inline unsigned char *
+ustrcat(unsigned char *dst, const unsigned char *src)
+{
+    return (unsigned char *)strcat((char *)dst, (char *)src);
+}

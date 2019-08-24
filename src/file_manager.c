@@ -1,6 +1,7 @@
 #include "file_manager.h"
 #include <stdlib.h>
 #include "logger.h"
+#include <sys/stat.h>
 
 uint32_t 
 parse_4_bytearr(BYTE* arr){
@@ -45,12 +46,12 @@ init_instruction(BYTE* barr){
     //4. 100BYTE arg0 (has to have null terminate)
     if(ins.flag_c > 0){
         memcpy(ins.arg0, ROOT, root_len);
-        strcat(ins.arg0 + root_len, barr+6);
+        strcat(ins.arg0 + root_len, (char*)(barr+6));
     }
     //5. 100BYTE arg1 (has to have null terminate)
     if(ins.flag_c == 2){
         memcpy(ins.arg0, ROOT, root_len);
-        strcat(ins.arg0 + root_len, barr+106);
+        strcat(ins.arg0 + root_len, (char*)(barr+106));
     }
 
     Log("\nInstruction recieved with data:\nInstruction flag: %u,\nflag count: %u\n"
@@ -79,34 +80,63 @@ get_instruction_name(instruction_flag flag){
 BYTE*
 get_dir(Instruction *ins) {
     struct dirent*  d;
-    size_t          length = 0, 
-                    data_size = FILE_CHUNK;
-    BYTE*           data = malloc(FILE_CHUNK);
+    size_t          length      = 0, 
+                    data_size   = FILE_CHUNK;
+    BYTE*           data        = malloc(FILE_CHUNK);
+    time_t          change_time = 0;
+    long            file_size   = 0;
+    char            file_path[256];
+    BYTE            buffer[256];
+    uint16_t        root_len = strlen(ROOT);
 
-    if(!data) exit(1);
+    if(!data || root_len < 1) return NULL;
+    strcpy(file_path, ROOT);
     *data = '\0';
 
-    //d = opendir(".");
     while ((d = readdir(ins->dirptr)) != NULL) {
         if (d->d_type == DT_REG) {
             size_t name_size = strlen(d->d_name);
             //-2 for delimiter and \0
-            if(data_size - 2 <= length + name_size){
+            if(data_size - 256 <= length + name_size){
                 BYTE* temp = realloc(data, data_size * 2);
                 if(temp){
                     data = temp;
                     data_size *= 2;
                 }
             }
-            strcat(data, d->d_name);
-            data[length+name_size] = '~';
-            data[length+name_size+1] = '\0';
-            length += name_size + 1;
+            //set file path
+            strcat(file_path, d->d_name);
+            if(!get_file_data(file_path, &change_time, &file_size)){
+                change_time = 0; file_size = 0;
+            }
+            file_path[root_len] = '\0';
+
+            //set name
+            strcpy((char*)buffer, d->d_name);
+            buffer[name_size] = '*'; 
+            //set size
+            snprintf((char*)(buffer+name_size + 1), 256-name_size, "%ld*", file_size);
+            size_t cur_len = strlen(buffer);
+            //set time
+            snprintf((char*)(buffer+cur_len), 256-cur_len, "%ld~\0", (long)change_time);
+
+            length += strlen(buffer);
+            strcat(data, buffer);
         }
     }
+    printf("%s\n", (char*)data);
     return data;
 }
 
 
-
+bool 
+get_file_data(const char *file_path, __time_t* time, __off_t* size){
+    struct stat statbuf;
+    if(stat(file_path, &statbuf) == -1){
+        return false;
+    }
+    *time = statbuf.st_mtime;
+    *size = statbuf.st_size;
+    return true;
+}
 
