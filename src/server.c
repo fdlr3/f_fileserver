@@ -10,11 +10,6 @@
 #include <errno.h>
 #include <arpa/inet.h>
 
-static void 
-error(const char *msg)
-{
-    perror(msg);
-}
 
 void 
 start_server(int16_t port, f_server *server){
@@ -176,7 +171,7 @@ close_server(void *server){
     close(serverp->fc.fd);
 }
 
-static int 
+int 
 send_file(FILE *fp, f_client* fc){
     size_t  read_size   = FILE_CHUNK,
             n = 0;
@@ -188,7 +183,7 @@ send_file(FILE *fp, f_client* fc){
     return 1;
 }
 
-static int 
+int 
 read_file(FILE *fp, f_client* fc, size_t size){
     BYTE    read_buffer[FILE_CHUNK];
     size_t  pack_size   = size >= FILE_CHUNK ? FILE_CHUNK : size,
@@ -210,7 +205,7 @@ read_file(FILE *fp, f_client* fc, size_t size){
     return 1;
 }
 
-static int 
+int 
 send_data(int fd, BYTE* buffer, size_t n){
     int     offset  = 0;
     size_t  sent    = 0;
@@ -224,7 +219,7 @@ send_data(int fd, BYTE* buffer, size_t n){
     return (int)sent;
 }
 
-static int
+int
 read_data(int fd, BYTE* buffer, size_t n){
     int read_b = 0;
     int result = 0;
