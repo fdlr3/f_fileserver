@@ -8,7 +8,8 @@
 #include <stdbool.h>
 #include <dirent.h>
 
-#define ROOT "/home/duler/Desktop/Root/"
+//#define ROOT "/home/duler/Desktop/Root/"
+#define ROOT "/home/pi/Root/"
 #define D_BSD_SOURCE
 #define FILE_CHUNK 1024
 #define MAX_FILE_SIZE INT32_MAX

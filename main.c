@@ -8,6 +8,7 @@
 
 int main(){
     //setup logger
+    printf("test");
     start_logger();
     f_server server;
     start_server(PORT_N, &server);
