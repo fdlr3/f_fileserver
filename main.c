@@ -19,7 +19,6 @@ int main(){
     }
 
     close_server(&server);
-    //temp
     return 0;
 }
 
