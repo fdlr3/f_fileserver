@@ -15,6 +15,7 @@ typedef struct{
     int fd;
     struct sockaddr_in addr;
     socklen_t clilen;
+    bool authenticated;
 } f_client;
 
 //SERVER STRUCT

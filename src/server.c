@@ -14,6 +14,7 @@
 void 
 start_server(int16_t port, f_server *server){
     memset(server, 0, sizeof(f_server));
+    server->fc.authenticated = false;
     server->port_num = port;
     server->close_server = close_server;
     server->listen_server = listen_server;
@@ -91,8 +92,11 @@ server_IO(f_client* fc){
             continue;
         }
 
+
+
         switch(ins.flag){
             case if_PUSH:{
+                if(!check_auth(fc)) { continue; }                
                 ins.fptr = fopen(ins.arg0,"w");
                 if(ins.fptr == NULL) { exit(EXIT_FAILURE); /*TODO ERROR */}
                 read_file(ins.fptr, fc, ins.file_size);
@@ -100,6 +104,7 @@ server_IO(f_client* fc){
                 break;
             }
             case if_GET:{
+                if(!check_auth(fc)) { continue; }   
                 BYTE buffer[4] = {0};
                 ins.fptr = fopen(ins.arg0, "rb");
                 if(ins.fptr == NULL) { exit(EXIT_FAILURE); /*TODO ERROR */}
@@ -113,10 +118,12 @@ server_IO(f_client* fc){
                 break;
             }
             case if_REM:{
+                if(!check_auth(fc)) { continue; }   
                 remove(ins.arg0);
                 break;
             }
             case if_UP:{
+                if(!check_auth(fc)) { continue; }   
                 remove(ins.arg0);
                 ins.fptr = fopen(ins.arg1,"w");
                 if(ins.fptr == NULL) { exit(EXIT_FAILURE); /*TODO ERROR */}
@@ -125,6 +132,7 @@ server_IO(f_client* fc){
                 break;
             }
             case if_DIR:{
+                if(!check_auth(fc)) { continue; }   
                 BYTE* buffer = NULL;
                 BYTE buffer_len[4] = {0};
                 size_t i = 0, len = 0, send_length = 0,
@@ -153,6 +161,10 @@ server_IO(f_client* fc){
                     free(buffer);
                 }
                 closedir(ins.dirptr);
+                break;
+            }
+            case if_AUTH:{
+
                 break;
             }
             default:{
@@ -233,8 +245,16 @@ read_data(int fd, BYTE* buffer, size_t n){
     return read_b;
 }
 
-static inline unsigned char *
-ustrcat(unsigned char *dst, const unsigned char *src)
-{
-    return (unsigned char *)strcat((char *)dst, (char *)src);
+bool 
+check_auth(f_client *fc){
+    if(!fc->authenticated){
+        //set error
+        return false;
+    }
+    return true;
+}
+
+bool 
+authenticate(const char* id, const char* hash){
+    FILE *fp = fopen(CONFIGPATH, "r");
 }

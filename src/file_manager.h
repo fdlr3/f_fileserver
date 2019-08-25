@@ -9,6 +9,7 @@
 #include <dirent.h>
 
 #define ROOT "/home/duler/Desktop/Root/"
+
 //#define ROOT "/home/pi/Root/"
 #define D_BSD_SOURCE
 #define FILE_CHUNK 1024
@@ -38,7 +39,8 @@ typedef enum{
     if_REM      = 1 << 2,
     if_UP       = 1 << 3,
     if_DIR      = 1 << 4,
-    if_ERROR    = 1 << 5
+    if_AUTH     = 1 << 5,
+    if_ERROR    = 1 << 6
 } instruction_flag;
 
 typedef struct{
@@ -61,5 +63,6 @@ BYTE *get_dir(Instruction *ins);
 char* get_instruction_name(instruction_flag flag);
 
 bool get_file_data(const char *file_path, __time_t* time, __off_t* size);
-
+bool check_auth(f_client *fc);
+bool authenticate(const char* id, const char* hash);
 #endif

@@ -45,18 +45,26 @@ init_instruction(BYTE* barr){
     memcpy(&(ins.file_size), barr+2, sizeof(uint32_t));
     //4. 100BYTE arg0 (has to have null terminate)
     if(ins.flag_c > 0){
-        memcpy(ins.arg0, ROOT, root_len);
-        strcat(ins.arg0 + root_len, (char*)(barr+6));
+        if(ins.flag == if_AUTH){
+            strcpy(ins.arg0, (char*)(barr+6));
+        } else {
+            memcpy(ins.arg0, ROOT, root_len);
+            strcat(ins.arg0 + root_len, (char*)(barr+6));
+        }
     }
     //5. 100BYTE arg1 (has to have null terminate)
     if(ins.flag_c == 2){
-        memcpy(ins.arg0, ROOT, root_len);
-        strcat(ins.arg0 + root_len, (char*)(barr+106));
+        if(ins.flag == if_AUTH){
+            strcpy(ins.arg0, (char*)(barr+106));
+        } else {
+            memcpy(ins.arg0, ROOT, root_len);
+            strcat(ins.arg0 + root_len, (char*)(barr+106));
+        }
     }
 
-    Log("\nInstruction recieved with data:\nInstruction flag: %u,\nflag count: %u\n"
+    Log("\nInstruction recieved with data:\nInstruction flag: %s,\nflag count: %u\n"
     "file size: %u,\nargument 1: %s,\nanargument 2: %s",
-    ins.flag, 
+    get_instruction_name(ins.flag), 
     ins.flag_c, 
     ins.file_size, 
     ins.arg0, 
@@ -73,6 +81,7 @@ get_instruction_name(instruction_flag flag){
         case if_UP:   return "UPDATE";
         case if_REM:  return "REMOVE";
         case if_DIR:  return "DIRECTORY";
+        case if_AUTH: return "AUTHENTICATE";
         default:      return "ERROR";
     }
 }
@@ -97,7 +106,7 @@ get_dir(Instruction *ins) {
         if (d->d_type == DT_REG) {
             size_t name_size = strlen(d->d_name);
             //-2 for delimiter and \0
-            if(data_size - 256 <= length + name_size){
+            if(data_size - 255 <= length + name_size){
                 BYTE* temp = realloc(data, data_size * 2);
                 if(temp){
                     data = temp;
@@ -115,10 +124,10 @@ get_dir(Instruction *ins) {
             strcpy((char*)buffer, d->d_name);
             buffer[name_size] = '*'; 
             //set size
-            snprintf((char*)(buffer+name_size + 1), 256-name_size, "%ld*", file_size);
+            snprintf((char*)(buffer+name_size + 1), 255-name_size, "%ld*", file_size);
             size_t cur_len = strlen(buffer);
             //set time
-            snprintf((char*)(buffer+cur_len), 256-cur_len, "%ld~\0", (long)change_time);
+            snprintf((char*)(buffer+cur_len), 255-cur_len, "%ld~\0", (long)change_time);
 
             length += strlen(buffer);
             strcat(data, buffer);
