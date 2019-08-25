@@ -1,5 +1,6 @@
 #include "server.h"
 #include "logger.h"
+#include "config_reader.h"
 #include <netinet/in.h>
 #include <stdio.h>
 #include <stdlib.h>
@@ -164,7 +165,9 @@ server_IO(f_client* fc){
                 break;
             }
             case if_AUTH:{
-
+                if(!check_auth(fc)){
+                    authenticate(ins.arg0, ins.arg1);
+                }
                 break;
             }
             default:{
@@ -256,5 +259,16 @@ check_auth(f_client *fc){
 
 bool 
 authenticate(const char* id, const char* hash){
-    FILE *fp = fopen(CONFIGPATH, "r");
+    bool ID_AUTH = false,
+         PW_AUTH = false;
+
+    char    buffer[256] = {0};
+    get_tag(buffer, ID_TAG);
+    if(strcmp(buffer, id) == 0) { ID_AUTH = true; }
+    get_tag(buffer, PW_TAG);
+    if(strcmp(buffer, hash) == 0) { PW_AUTH = true; }
+    
+    return ID_AUTH && PW_AUTH;
 }
+
+

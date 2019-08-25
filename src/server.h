@@ -43,4 +43,6 @@ int read_data(int fd, BYTE* buffer, size_t n);
 int send_file(FILE *fp, f_client* fc);
 int read_file(FILE *fp, f_client* fc, size_t size);
 
+bool check_auth(f_client *fc);
+bool authenticate(const char* id, const char* hash);
 #endif

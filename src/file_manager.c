@@ -1,3 +1,4 @@
+#define D_BSD_SOURCE
 #include "file_manager.h"
 #include <stdlib.h>
 #include "logger.h"

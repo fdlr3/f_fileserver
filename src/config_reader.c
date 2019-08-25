@@ -3,18 +3,16 @@
 #include <stdlib.h>
 #include <string.h>
 
-FILE* 
-open_config(){
-    return fopen(CONFIGPATH, "r");
-}
-
 char* 
-get_tag(FILE* fp, char* dest, config_TAG tag){
-    const char* search_tag = NULL;
-    char buffer[256] = {0};
-    char *line = NULL;
-    size_t len = 0;
-    ssize_t read;
+get_tag(char* dest, config_TAG tag){
+    FILE*       fp          = fopen(CONFIGPATH, "r");
+    const char* search_tag  = NULL;
+    char        buffer[256] = {0};
+    char *      line        = NULL;
+    size_t      len         = 0;
+    ssize_t     read;
+
+    if(fp == NULL) { return NULL; }
 
     for(int i = 0; i < config_size; i++){
         if(tag == conf_values[i].tag){
@@ -33,5 +31,7 @@ get_tag(FILE* fp, char* dest, config_TAG tag){
             break;
         }
     }
+    free(line);
+    fclose(fp);
     return dest;
 }

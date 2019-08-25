@@ -8,30 +8,17 @@
 #include <stdbool.h>
 #include <dirent.h>
 
-#define ROOT "/home/duler/Desktop/Root/"
+#ifdef __arm__
+    #define ROOT "/home/pi/Root/"
+#else
+    #define ROOT "/home/duler/Desktop/Root/"
+#endif
 
-//#define ROOT "/home/pi/Root/"
-#define D_BSD_SOURCE
 #define FILE_CHUNK 1024
 #define MAX_FILE_SIZE INT32_MAX
 #define ARG_SIZE 100
 typedef uint8_t BYTE;
 
-/*  ####### SIZE - 206 BYTES #######
-*   1 BYTE = instruction
-*   1 BYTE = argument count (uint8_t)
-*   4 BYTE = file_size (uint32_t)
-*   100 BYTE = arg0
-*   100 BYTE = arg1
-*
-*   get [file name] (gets file)
-*   push [file name] (pushes file)
-*   dir (get all files)
-*   del [file_name] (delete file)
-*   up [replaced_file_name] [file_name] (replace file with a new one)
-*
-*
-*/
 
 typedef enum{
     if_PUSH     = 1 << 0,
@@ -63,6 +50,5 @@ BYTE *get_dir(Instruction *ins);
 char* get_instruction_name(instruction_flag flag);
 
 bool get_file_data(const char *file_path, __time_t* time, __off_t* size);
-bool check_auth(f_client *fc);
-bool authenticate(const char* id, const char* hash);
+
 #endif
