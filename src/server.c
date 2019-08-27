@@ -166,7 +166,10 @@ server_IO(f_client* fc){
             }
             case if_AUTH:{
                 if(!check_auth(fc)){
-                    authenticate(ins.arg0, ins.arg1);
+                    if(authenticate(ins.arg0, ins.arg1)){
+                        fc->authenticated = true;
+                    }
+                    Log("User %s is authenticated.", ins.arg0);
                 }
                 break;
             }
@@ -250,10 +253,10 @@ read_data(int fd, BYTE* buffer, size_t n){
 
 bool 
 check_auth(f_client *fc){
-    if(!fc->authenticated){
+    /*if(!fc->authenticated){
         //set error
         return false;
-    }
+    }*/
     return true;
 }
 
@@ -268,7 +271,8 @@ authenticate(const char* id, const char* hash){
     get_tag(buffer, PW_TAG);
     if(strcmp(buffer, hash) == 0) { PW_AUTH = true; }
     
-    return ID_AUTH && PW_AUTH;
+    //return ID_AUTH && PW_AUTH;
+    return true;
 }
 
 

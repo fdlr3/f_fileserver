@@ -27,7 +27,15 @@ get_tag(char* dest, config_TAG tag){
         buffer[3] = '\0';
         
         if(strcmp(search_tag, buffer) == 0){
+            size_t len = strlen(buffer+4);
             strcpy(dest, buffer+4);
+            //FIX
+            for(int i = 0; i < len; i++){
+                if(dest[i] == '\n'){
+                    dest[i] = '\0';
+                    break;
+                }
+            }
             break;
         }
     }
