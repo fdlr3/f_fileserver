@@ -19,7 +19,6 @@
 #define ARG_SIZE 100
 typedef uint8_t BYTE;
 
-
 typedef enum{
     if_PUSH     = 1 << 0,
     if_GET      = 1 << 1,

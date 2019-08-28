@@ -102,6 +102,7 @@ server_IO(f_client* fc){
 
         //check if user is not authenticated
         if(!check_auth(fc) && ins.flag != if_AUTH) { 
+            Log("Instruction denied because user is not authenticated.");
             continue; 
         }
 
@@ -189,7 +190,7 @@ server_IO(f_client* fc){
                         get_ins_name(ins.flag));
                     continue;
                 }
-                
+
                 buffer = get_dir(&ins);
                 len = strlen((char*)buffer);
                 cur_len = len;
@@ -218,8 +219,11 @@ server_IO(f_client* fc){
                 if(!check_auth(fc)){
                     if(authenticate(ins.arg0, ins.arg1)){
                         fc->authenticated = true;
+                        Log("User %s is authenticated.", ins.arg0);
+                    } else {
+                        Log("Cannot authenticate user %s.", ins.arg0);
                     }
-                    Log("User %s is authenticated.", ins.arg0);
+                    
                 }
                 break;
             }
@@ -303,10 +307,10 @@ read_data(int fd, BYTE* buffer, size_t n){
 
 bool 
 check_auth(f_client *fc){
-    /*if(!fc->authenticated){
+    if(!fc->authenticated){
         //set error
         return false;
-    }*/
+    }
     return true;
 }
 

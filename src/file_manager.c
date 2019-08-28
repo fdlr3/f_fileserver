@@ -29,7 +29,7 @@ Instruction
 init_instruction(BYTE* barr){
     Instruction ins;
     size_t      root_len = strlen(ROOT);
-    
+
     memset(&ins, 0, sizeof(Instruction));
     ins.valid = true;
     ins.fptr = NULL;
@@ -74,10 +74,10 @@ init_instruction(BYTE* barr){
             Log("No nul terminate in second argument or size too big.");
         }
         if(ins.flag == if_AUTH){
-            strcpy(ins.arg0, (char*)(barr+106));
+            strcpy(ins.arg1, (char*)(barr+106));
         } else {
-            memcpy(ins.arg0, ROOT, root_len);
-            strcat(ins.arg0 + root_len, (char*)(barr+106));
+            memcpy(ins.arg1, ROOT, root_len);
+            strcat(ins.arg1 + root_len, (char*)(barr+106));
         }
     }
 
