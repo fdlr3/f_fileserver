@@ -79,36 +79,61 @@ server_IO(f_client* fc){
     Instruction ins = {0};
     BYTE ins_buffer[206] = {0};
     while(1){
+        //read instruction
         int n = read_data(fc->fd, ins_buffer, 206);
-        //if client socked closed
+
+        //check in recieved instruction
         if(n == 0){
             close(fc->fd);
             memset(fc, 0, sizeof(f_client));
             Log("Client disconnected from the server.");
             return;
         }
+        else if(n != 206){
+            Log("Instruction size was the incorrect size of %i", n);
+        }
+
+        //parse instruction
         ins = init_instruction(ins_buffer);
         if(!ins.valid) {
             Log("Error in instruction.");
             continue;
         }
 
-
+        //check if user is not authenticated
+        if(!check_auth(fc) && ins.flag != if_AUTH) { 
+            continue; 
+        }
 
         switch(ins.flag){
-            case if_PUSH:{
-                if(!check_auth(fc)) { continue; }                
-                ins.fptr = fopen(ins.arg0,"w");
-                if(ins.fptr == NULL) { exit(EXIT_FAILURE); /*TODO ERROR */}
-                read_file(ins.fptr, fc, ins.file_size);
-                fclose(ins.fptr);
+            case if_PUSH:{    
+                ins.fptr = fopen(ins.arg0, "w");
+                if(ins.fptr == NULL) { 
+                    Log("Running instruction %s failed to open file %s", 
+                        get_ins_name(ins.flag), ins.arg0);
+                    continue;
+                }
+                
+                int n = read_file(ins.fptr, fc, ins.file_size);
+                if(n == 0){
+                    Log("Failed reading file because client closed mid send.");
+                    fclose(ins.fptr);
+                    remove(ins.arg0);
+                } else { 
+                    fclose(ins.fptr);
+                }
                 break;
             }
             case if_GET:{
-                if(!check_auth(fc)) { continue; }   
                 BYTE buffer[4] = {0};
+                memset(buffer, 0, 4);
+
                 ins.fptr = fopen(ins.arg0, "rb");
-                if(ins.fptr == NULL) { exit(EXIT_FAILURE); /*TODO ERROR */}
+                if(ins.fptr == NULL) { 
+                    Log("Running instruction %s failed to open file %s", 
+                        get_ins_name(ins.flag), ins.arg0);
+                    continue;
+                }
                 //send 4BYTES of file size
                 size_t size = file_size(ins.fptr);
                 parse_num(buffer, size);
@@ -118,28 +143,53 @@ server_IO(f_client* fc){
                 fclose(ins.fptr);
                 break;
             }
-            case if_REM:{
-                if(!check_auth(fc)) { continue; }   
-                remove(ins.arg0);
+            case if_REM:{ 
+                int n = remove(ins.arg0);
+                if(n == -1){
+                    Log("Failed to remove file %s.", ins.arg0);
+                }
                 break;
             }
             case if_UP:{
-                if(!check_auth(fc)) { continue; }   
-                remove(ins.arg0);
+                int n = remove(ins.arg0);
+                if(n == -1){
+                    Log("Failed to remove file %s.", ins.arg0);
+                }
+
                 ins.fptr = fopen(ins.arg1,"w");
-                if(ins.fptr == NULL) { exit(EXIT_FAILURE); /*TODO ERROR */}
-                read_file(ins.fptr, fc, ins.file_size);
-                fclose(ins.fptr);
+                if(ins.fptr == NULL) { 
+                    Log("Running instruction %s failed to open file %s", 
+                        get_ins_name(ins.flag), ins.arg0);
+                    continue;
+                }
+
+                int nn = read_file(ins.fptr, fc, ins.file_size);
+                if(nn == 0){
+                    Log("Failed reading file because client closed mid send.");
+                    fclose(ins.fptr);
+                    remove(ins.arg0);
+                } else { 
+                    fclose(ins.fptr);
+                }
                 break;
             }
-            case if_DIR:{
-                if(!check_auth(fc)) { continue; }   
-                BYTE* buffer = NULL;
-                BYTE buffer_len[4] = {0};
-                size_t i = 0, len = 0, send_length = 0,
-                cur_len = 0;
+            case if_DIR:{ 
+                BYTE*   buffer          = NULL;
+                size_t  i               = 0, 
+                        len             = 0, 
+                        send_length     = 0,
+                        cur_len         = 0;
+                BYTE    buffer_len[4];
+                memset(buffer_len, 0 , 4);
+
+                
                 ins.dirptr = opendir(ROOT);
-                if(ins.dirptr == NULL) { exit(EXIT_FAILURE); /*TODO ERROR */}
+                if(ins.dirptr == NULL) { 
+                    Log("Running instruction %s failed to open directory", 
+                        get_ins_name(ins.flag));
+                    continue;
+                }
+                
                 buffer = get_dir(&ins);
                 len = strlen((char*)buffer);
                 cur_len = len;

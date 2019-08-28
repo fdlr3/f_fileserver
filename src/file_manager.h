@@ -42,13 +42,11 @@ typedef struct{
 } Instruction;
 
 Instruction init_instruction(BYTE* barr);
-
 uint32_t parse_4_bytearr(BYTE* arr);
 void parse_num(BYTE* arr, uint32_t n);
 uint32_t file_size(FILE *fp);
 BYTE *get_dir(Instruction *ins);
-char* get_instruction_name(instruction_flag flag);
-
+char* get_ins_name(instruction_flag flag);
 bool get_file_data(const char *file_path, __time_t* time, __off_t* size);
 
 #endif
