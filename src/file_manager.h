@@ -26,7 +26,8 @@ typedef enum{
     if_UP       = 1 << 3,
     if_DIR      = 1 << 4,
     if_AUTH     = 1 << 5,
-    if_ERROR    = 1 << 6
+    if_RESP     = 1 << 6,
+    if_ERROR    = 1 << 7
 } instruction_flag;
 
 typedef struct{

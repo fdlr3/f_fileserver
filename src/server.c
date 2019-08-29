@@ -74,7 +74,8 @@ listen_server(void *server){
 }
 
 void 
-server_IO(f_client* fc){
+server_IO(f_server* fs){
+    f_client* fc = &(fs->fc);
     Log("Started listening for incoming instructions.");
     Instruction ins = {0};
     BYTE ins_buffer[206] = {0};
@@ -148,6 +149,7 @@ server_IO(f_client* fc){
                 int n = remove(ins.arg0);
                 if(n == -1){
                     Log("Failed to remove file %s.", ins.arg0);
+                } else {
                 }
                 break;
             }
@@ -223,7 +225,6 @@ server_IO(f_client* fc){
                     } else {
                         Log("Cannot authenticate user %s.", ins.arg0);
                     }
-                    
                 }
                 break;
             }

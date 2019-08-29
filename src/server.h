@@ -6,11 +6,6 @@
 #include <netinet/in.h>
 #include "file_manager.h"
 
-
-
-
-void error(const char *msg);
-
 typedef struct{
     int fd;
     struct sockaddr_in addr;
@@ -20,7 +15,7 @@ typedef struct{
 
 //SERVER STRUCT
 typedef struct {
-    //clients
+    //client
     f_client fc;
     //file descriptor for the socket
     int server_fd;
@@ -35,7 +30,7 @@ typedef struct {
 
 void start_server(int16_t port, f_server *server);
 void listen_server(void *server);
-void server_IO(f_client *fc);
+void server_IO(f_server *fs);
 void close_server(void *server);
 
 int send_data(int fd, BYTE* buffer, size_t n);
