@@ -102,7 +102,9 @@ server_IO(f_server* fs){
         }
 
         //check if user is not authenticated
-        if(!check_auth(fc) && ins.flag != if_AUTH) { 
+        int t = (int)check_auth(fc);
+        if(!check_auth(fc) && 
+            !(ins.flag == if_AUTH || ins.flag == if_LOGIN_STATUS)) { 
             Log("Instruction denied because user is not authenticated.");
             continue; 
         }
@@ -228,6 +230,21 @@ server_IO(f_server* fs){
                 }
                 break;
             }
+            case if_LOGIN_STATUS:{
+                //random numbers 
+                BYTE buffer[5] = { 0x7F, 0x3E, 0x24, 0x55 };
+                BYTE logged_in_flag     = 0xFF;
+                BYTE logged_out_flag    = 0x00;
+
+                if(check_auth(fc)){
+                    buffer[4] = logged_in_flag;
+                    send_data(fc->fd, buffer, 5);
+                } else {
+                    buffer[4] = logged_out_flag;
+                    send_data(fc->fd, buffer, 5);
+                }
+                break;
+            }
             default:{
                 break;
             }
@@ -326,8 +343,7 @@ authenticate(const char* id, const char* hash){
     get_tag(buffer, PW_TAG);
     if(strcmp(buffer, hash) == 0) { PW_AUTH = true; }
     
-    //return ID_AUTH && PW_AUTH;
-    return true;
+    return ID_AUTH && PW_AUTH;
 }
 
 

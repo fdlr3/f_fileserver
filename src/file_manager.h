@@ -20,14 +20,14 @@
 typedef uint8_t BYTE;
 
 typedef enum{
-    if_PUSH     = 1 << 0,
-    if_GET      = 1 << 1,
-    if_REM      = 1 << 2,
-    if_UP       = 1 << 3,
-    if_DIR      = 1 << 4,
-    if_AUTH     = 1 << 5,
-    if_RESP     = 1 << 6,
-    if_ERROR    = 1 << 7
+    if_PUSH             = 1 << 0,
+    if_GET              = 1 << 1,
+    if_REM              = 1 << 2,
+    if_UP               = 1 << 3,
+    if_DIR              = 1 << 4,
+    if_AUTH             = 1 << 5,
+    if_LOGIN_STATUS     = 1 << 6,
+    if_ERROR            = 1 << 7
 } instruction_flag;
 
 typedef struct{

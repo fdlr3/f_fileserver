@@ -95,13 +95,14 @@ init_instruction(BYTE* barr){
 char* 
 get_ins_name(instruction_flag flag){
     switch(flag){
-        case if_PUSH: return "PUSH";
-        case if_GET:  return "GET";
-        case if_UP:   return "UPDATE";
-        case if_REM:  return "REMOVE";
-        case if_DIR:  return "DIRECTORY";
-        case if_AUTH: return "AUTHENTICATE";
-        default:      return "ERROR";
+        case if_PUSH:           return "PUSH";
+        case if_GET:            return "GET";
+        case if_UP:             return "UPDATE";
+        case if_REM:            return "REMOVE";
+        case if_DIR:            return "DIRECTORY";
+        case if_AUTH:           return "AUTHENTICATE";
+        case if_LOGIN_STATUS:   return "LOGINSTATUS";
+        default:                return "ERROR";
     }
 }
 
