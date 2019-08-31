@@ -3,6 +3,12 @@
 #include <stdlib.h>
 #include <string.h>
 
+const config_value conf_values[] = {
+    { ID_TAG, "#ID" },
+    { PW_TAG, "#PW" },
+    { SZ_TAG, "#SZ" }
+};
+
 char* 
 get_tag(char* dest, config_TAG tag){
     FILE*       fp          = fopen(CONFIGPATH, "r");
@@ -13,6 +19,8 @@ get_tag(char* dest, config_TAG tag){
     ssize_t     read;
 
     if(fp == NULL) { return NULL; }
+
+    int config_size = sizeof(conf_values) / sizeof(conf_values[0]);
 
     for(int i = 0; i < config_size; i++){
         if(tag == conf_values[i].tag){

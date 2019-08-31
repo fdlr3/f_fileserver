@@ -102,7 +102,6 @@ server_IO(f_server* fs){
         }
 
         //check if user is not authenticated
-        int t = (int)check_auth(fc);
         if(!check_auth(fc) && 
             !(ins.flag == if_AUTH || ins.flag == if_LOGIN_STATUS)) { 
             Log("Instruction denied because user is not authenticated.");

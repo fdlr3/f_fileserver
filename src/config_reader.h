@@ -21,13 +21,7 @@ typedef struct{
     char* value;
 } config_value;
 
-static config_value conf_values[] = {
-    { ID_TAG, "#ID" },
-    { PW_TAG, "#PW" },
-    { SZ_TAG, "#SZ" }
-};
-
-static int config_size = sizeof(conf_values) / sizeof(conf_values[0]);
+extern const config_value conf_values[];
 
 char* get_tag(char* dest, config_TAG tag);
 

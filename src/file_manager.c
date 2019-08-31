@@ -145,12 +145,12 @@ get_dir(Instruction *ins) {
             buffer[name_size] = '*'; 
             //set size
             snprintf((char*)(buffer+name_size + 1), 255-name_size, "%ld*", file_size);
-            size_t cur_len = strlen(buffer);
+            size_t cur_len = strlen((char*)buffer);
             //set time
-            snprintf((char*)(buffer+cur_len), 255-cur_len, "%ld~\0", (long)change_time);
+            snprintf((char*)(buffer+cur_len), 255-cur_len, "%ld~", (long)change_time);
 
-            length += strlen(buffer);
-            strcat(data, buffer);
+            length += strlen((char*)buffer);
+            strcat((char*)data, (char*)buffer);
         }
     }
     printf("%s\n", (char*)data);
