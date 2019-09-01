@@ -29,8 +29,9 @@ typedef enum{
     if_LOGIN_STATUS     = 0x06,
     if_GO               = 0x07, //go to directory
     if_REV              = 0x08, //Go back in directory
-    if_MKFD             = 0x09,
-    if_RMFD             = 0x0A
+    if_PATH             = 0x09,
+    if_MKFD             = 0x0A,
+    if_RMFD             = 0x0B
 } instruction_flag;
 
 typedef struct{

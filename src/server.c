@@ -10,7 +10,9 @@
 #include <sys/socket.h>
 #include <errno.h>
 #include <arpa/inet.h>
-
+#include <unistd.h>
+#include <sys/types.h>
+#include <sys/stat.h>
 
 void 
 start_server(int16_t port, f_server *server){
@@ -135,8 +137,8 @@ server_IO(f_server* fs){
                 break;
             }
             case if_GET:{
-                BYTE buffer[4] = {0};
-                memset(buffer, 0, 4);
+                BYTE s_buff[4] = {0};
+                memset(s_buff, 0, 4);
 
                 char buffer[255];
                 char* temp = prepare_path(buffer, fc, ins.arg0);
@@ -153,8 +155,8 @@ server_IO(f_server* fs){
                 }
                 //send 4BYTES of file size
                 size_t size = file_size(ins.fptr);
-                parse_num(buffer, size);
-                send_data(fc->fd, buffer, 4);
+                parse_num(s_buff, size);
+                send_data(fc->fd, s_buff, 4);
                 //send actual file
                 send_file(ins.fptr, fc);
                 fclose(ins.fptr);
@@ -201,7 +203,7 @@ server_IO(f_server* fs){
                 memset(buffer_len, 0 , 4);
 
                 
-                ins.dirptr = opendir(ROOT);
+                ins.dirptr = opendir(fc->f_directory);
                 if(ins.dirptr == NULL) { 
                     Log("Running instruction %s failed to open directory", 
                         get_ins_name(ins.flag));
@@ -258,6 +260,29 @@ server_IO(f_server* fs){
                 }
                 break;
             }
+            case if_GO:{
+                if(go_dir(fc, ins.arg0)){
+                    Log("Successful switching to %s", fc->f_directory);
+                } else {
+                    Log("Unsucessful GO instruction.");
+                }
+                break;
+            }
+            case if_REV:{
+                if(rev_dir(fc)){
+                    Log("Successful reversing to %s", fc->f_directory);
+                } else {
+                    Log("Unsucessful REV instruction.");
+                }
+                break;
+            }
+            case if_PATH:{
+                BYTE size_buff[4];
+                parse_num(size_buff, fc->fdir_len);
+                send_data(fc->fd, size_buff, 4);
+                send_data(fc->fd, fc->f_directory, fc->fdir_len);
+                break;
+            }
             default:{
                 break;
             }
@@ -276,7 +301,7 @@ void
 clean_client(f_client *fc){
     memset(fc, 0, sizeof(f_client));
     size_t root_len = strlen(ROOT);
-    memset(fc->f_directory, ROOT, root_len + 1);
+    strcpy(fc->f_directory, ROOT);
     fc->fdir_len = root_len;
     fc->root_end = root_len;
 }
@@ -369,11 +394,11 @@ authenticate(const char* id, const char* hash){
 
 bool 
 go_dir(f_client *fc, const char* dir){
-    char        buffer[255];
-    size_t      dir_len = strlen(dir);
-    const char  slash   = "/\0";
-    size_t         len     = 0;
-    int         valid;
+    char            buffer[255];
+    size_t          dir_len = strlen(dir);
+    const char*     slash   = "/\0";
+    size_t          len     = 0;
+    int             valid;
 
     //check if size wont reach higher of 255 or dir length is 0
     if(dir_len == 0){
@@ -452,7 +477,7 @@ make_folder(f_client *fc, const char* folder){
     if(temp == NULL){
         return false;
     }
-    result = mkdir(buffer, 0777);
+    result = mkdir(buffer, 0700);
 
     return result == 0 ? true : false;
 }
@@ -467,7 +492,7 @@ remove_folder(f_client *fc, const char* folder){
     if(temp == NULL){
         return false;
     }
-    result = remdir(buffer, 0777);
+    result = rmdir(buffer);
 
     return result == 0 ? true : false;
 }

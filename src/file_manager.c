@@ -60,12 +60,8 @@ init_instruction(BYTE* barr){
         if(nult == NULL){
             Log("No nul terminate in first argument or size too big.");
         }
-        if(ins.flag == if_AUTH){
-            strcpy(ins.arg0, (char*)(barr+6));
-        } else {
-            memcpy(ins.arg0, ROOT, root_len);
-            strcat(ins.arg0 + root_len, (char*)(barr+6));
-        }
+        strcpy(ins.arg0, (char*)(barr+6));
+
     }
 
     //5. 100BYTE arg1 (has to have null terminate)
@@ -74,12 +70,8 @@ init_instruction(BYTE* barr){
         if(nult == NULL){
             Log("No nul terminate in second argument or size too big.");
         }
-        if(ins.flag == if_AUTH){
-            strcpy(ins.arg1, (char*)(barr+106));
-        } else {
-            memcpy(ins.arg1, ROOT, root_len);
-            strcat(ins.arg1 + root_len, (char*)(barr+106));
-        }
+        strcpy(ins.arg1, (char*)(barr+106));
+
     }
 
     Log("\nInstruction recieved with data:\nInstruction flag: %s,\nflag count: %u\n"
@@ -103,6 +95,9 @@ get_ins_name(instruction_flag flag){
         case if_DIR:            return "DIRECTORY";
         case if_AUTH:           return "AUTHENTICATE";
         case if_LOGIN_STATUS:   return "LOGINSTATUS";
+        case if_GO:             return "GO";
+        case if_REV:            return "REV";
+        case if_PATH:           return "PATH";
         default:                return "ERROR";
     }
 }
@@ -110,64 +105,41 @@ get_ins_name(instruction_flag flag){
 BYTE*
 get_dir(Instruction *ins) {
     struct dirent*  d;
-    size_t          length      = 0, 
-                    data_size   = FILE_CHUNK;
-    BYTE*           data        = malloc(FILE_CHUNK);
-    time_t          change_time = 0;
-    long            file_size   = 0;
-    char            file_path[256];
-    BYTE            buffer[256];
-    uint16_t        root_len = strlen(ROOT);
+    size_t          str_size;
+    size_t          end         = 0;
+    size_t          file_len    = 0;
+    BYTE*           data        = malloc(1024);
+    const char      del         = '~';
 
-    if(!data || root_len < 1) return NULL;
-    strcpy(file_path, ROOT);
-    *data = '\0';
+    if(!data){
+        return NULL;
+    }
+    str_size = 1024;
 
     while ((d = readdir(ins->dirptr)) != NULL) {
-        if (d->d_type == DT_REG) {
-            size_t name_size = strlen(d->d_name);
-            //-2 for delimiter and \0
-            if(data_size - 255 <= length + name_size){
-                BYTE* temp = realloc(data, data_size * 2);
-                if(temp){
-                    data = temp;
-                    data_size *= 2;
-                }
+        file_len = strlen(d->d_name);
+        if(str_size <= end + file_len){
+            BYTE* temp = realloc(data, str_size*2);
+            if(temp == NULL){
+                free(data);
+                return NULL;
             }
-            //set file path
-            strcat(file_path, d->d_name);
-            if(!get_file_data(file_path, &change_time, &file_size)){
-                change_time = 0; file_size = 0;
-            }
-            file_path[root_len] = '\0';
-
-            //set name
-            strcpy((char*)buffer, d->d_name);
-            buffer[name_size] = '*'; 
-            //set size
-            snprintf((char*)(buffer+name_size + 1), 255-name_size, "%ld*", file_size);
-            size_t cur_len = strlen((char*)buffer);
-            //set time
-            snprintf((char*)(buffer+cur_len), 255-cur_len, "%ld~", (long)change_time);
-
-            length += strlen((char*)buffer);
-            strcat((char*)data, (char*)buffer);
+            data = temp;
+            str_size *= 2;
+        }
+        if (strcmp(d->d_name, ".") == 0 || 
+            strcmp(d->d_name, "..") == 0){
+            continue;
+        }
+        if (d->d_type == DT_REG || d->d_type == DT_DIR) {
+            memcpy(data + end, d->d_name, file_len + 1);
+            end += file_len;
+            data[end++] = del;
         }
     }
-    printf("%s\n", (char*)data);
+    data[end] = '\0';
+    printf("%s", data);
     return data;
-}
-
-
-bool 
-get_file_data(const char *file_path, __time_t* time, __off_t* size){
-    struct stat statbuf;
-    if(stat(file_path, &statbuf) == -1){
-        return false;
-    }
-    *time = statbuf.st_mtime;
-    *size = statbuf.st_size;
-    return true;
 }
 
 int 
