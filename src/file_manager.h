@@ -20,14 +20,17 @@
 typedef uint8_t BYTE;
 
 typedef enum{
-    if_PUSH             = 1 << 0,
-    if_GET              = 1 << 1,
-    if_REM              = 1 << 2,
-    if_UP               = 1 << 3,
-    if_DIR              = 1 << 4,
-    if_AUTH             = 1 << 5,
-    if_LOGIN_STATUS     = 1 << 6,
-    if_ERROR            = 1 << 7
+    if_PUSH             = 0x00,
+    if_GET              = 0x01,
+    if_REM              = 0x02,
+    if_UP               = 0x03,
+    if_DIR              = 0x04,
+    if_AUTH             = 0x05,
+    if_LOGIN_STATUS     = 0x06,
+    if_GO               = 0x07, //go to directory
+    if_REV              = 0x08, //Go back in directory
+    if_MKFD             = 0x09,
+    if_RMFD             = 0x0A
 } instruction_flag;
 
 typedef struct{
@@ -48,5 +51,6 @@ uint32_t file_size(FILE *fp);
 BYTE *get_dir(Instruction *ins);
 char* get_ins_name(instruction_flag flag);
 bool get_file_data(const char *file_path, __time_t* time, __off_t* size);
+int dir_valid(const char* path);
 
 #endif

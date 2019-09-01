@@ -19,6 +19,7 @@ start_server(int16_t port, f_server *server){
     server->port_num = port;
     server->close_server = close_server;
     server->listen_server = listen_server;
+    clean_client(&(server->fc));
 
     //setup server struct
     struct sockaddr_in* sd = &server->server_addr;
@@ -86,7 +87,7 @@ server_IO(f_server* fs){
         //check in recieved instruction
         if(n == 0){
             close(fc->fd);
-            memset(fc, 0, sizeof(f_client));
+            clean_client(&(fs->fc));
             Log("Client disconnected from the server.");
             return;
         }
@@ -109,8 +110,14 @@ server_IO(f_server* fs){
         }
 
         switch(ins.flag){
-            case if_PUSH:{    
-                ins.fptr = fopen(ins.arg0, "w");
+            case if_PUSH:{
+                char buffer[255];
+                char* temp = prepare_path(buffer, fc, ins.arg0);
+                if(temp == NULL){
+                    Log("ERROR if_PUSH."); //fix
+                    break;
+                }
+                ins.fptr = fopen(buffer, "w");
                 if(ins.fptr == NULL) { 
                     Log("Running instruction %s failed to open file %s", 
                         get_ins_name(ins.flag), ins.arg0);
@@ -131,7 +138,14 @@ server_IO(f_server* fs){
                 BYTE buffer[4] = {0};
                 memset(buffer, 0, 4);
 
-                ins.fptr = fopen(ins.arg0, "rb");
+                char buffer[255];
+                char* temp = prepare_path(buffer, fc, ins.arg0);
+                if(temp == NULL){
+                    Log("ERROR if_PUSH."); //fix
+                    break;
+                }
+
+                ins.fptr = fopen(buffer, "rb");
                 if(ins.fptr == NULL) { 
                     Log("Running instruction %s failed to open file %s", 
                         get_ins_name(ins.flag), ins.arg0);
@@ -258,6 +272,16 @@ close_server(void *server){
     close(serverp->fc.fd);
 }
 
+void 
+clean_client(f_client *fc){
+    memset(fc, 0, sizeof(f_client));
+    size_t root_len = strlen(ROOT);
+    memset(fc->f_directory, ROOT, root_len + 1);
+    fc->fdir_len = root_len;
+    fc->root_end = root_len;
+}
+
+
 int 
 send_file(FILE *fp, f_client* fc){
     size_t  read_size   = FILE_CHUNK,
@@ -322,13 +346,10 @@ read_data(int fd, BYTE* buffer, size_t n){
     return read_b;
 }
 
+
 bool 
 check_auth(f_client *fc){
-    if(!fc->authenticated){
-        //set error
-        return false;
-    }
-    return true;
+    return fc->authenticated ? true : false;
 }
 
 bool 
@@ -345,4 +366,126 @@ authenticate(const char* id, const char* hash){
     return ID_AUTH && PW_AUTH;
 }
 
+
+bool 
+go_dir(f_client *fc, const char* dir){
+    char        buffer[255];
+    size_t      dir_len = strlen(dir);
+    const char  slash   = "/\0";
+    size_t         len     = 0;
+    int         valid;
+
+    //check if size wont reach higher of 255 or dir length is 0
+    if(dir_len == 0){
+        Log("Directory length is 0.");
+        return false;
+    }
+    if(dir_len + fc->fdir_len + 2 > 255){
+        Log("Directory size is larger than 255 bytes.");
+        return false;
+    }
+
+    //prepare new path to buffer
+    memcpy(buffer, fc->f_directory, fc->fdir_len);
+    len = fc->fdir_len;
+    memcpy(buffer + len, dir, dir_len);
+    len += dir_len;
+    memcpy(buffer + len, slash, 2);
+    len += 1;
+
+    //check if dir is valid
+    valid = dir_valid(buffer);
+    if(valid == 1) {
+        memcpy(fc->f_directory, buffer, len+1);
+        fc->fdir_len = len;
+        return true;
+    } else {
+        return false;
+    }
+}
+
+bool 
+rev_dir(f_client *fc){
+    char buffer[255];
+    size_t dir_len      = fc->fdir_len;
+    int counter         = 0;
+    int valid;
+    int buffer_len;
+
+    //if current directory is root dont go back
+    if(fc->fdir_len == fc->root_end){
+        return false;
+    }
+
+    //go one directory back
+    memcpy(buffer, fc->f_directory, dir_len + 1);
+    for(int i = dir_len; i > fc->root_end; i--){
+        if(buffer[i] == '/') {
+            if(counter == 1){
+                buffer[i + 1] = '\0';
+                break;
+            }
+            counter++;
+        }
+    }
+
+    //check if new buffer is valid
+    valid = dir_valid(buffer);
+    if(valid == 1) {
+        buffer_len = strlen(buffer);
+        memcpy(fc->f_directory, buffer, buffer_len + 1);
+        fc->fdir_len = buffer_len;
+        return true;
+    } else {
+        return false;
+    }
+}
+
+
+bool 
+make_folder(f_client *fc, const char* folder){
+    char buffer[255];
+    char* temp;
+    int result;
+
+    temp = prepare_path(buffer, fc, folder);
+    if(temp == NULL){
+        return false;
+    }
+    result = mkdir(buffer, 0777);
+
+    return result == 0 ? true : false;
+}
+
+bool 
+remove_folder(f_client *fc, const char* folder){
+    char buffer[255];
+    char* temp;
+    int result;
+
+    temp = prepare_path(buffer, fc, folder);
+    if(temp == NULL){
+        return false;
+    }
+    result = remdir(buffer, 0777);
+
+    return result == 0 ? true : false;
+}
+
+
+char* 
+prepare_path(char* src, f_client *fc, const char* file){
+    size_t file_len   = strlen(file);
+    size_t dir_len      = fc->fdir_len;
+
+    //new path length is larger than 255 or file len is 0
+    if((file_len + dir_len + 1 > 255) || file_len == 0){
+        return NULL;
+    }
+
+    memcpy(src, fc->f_directory, dir_len);
+    memcpy(src + dir_len, file, file_len + 1);
+
+    return src;
+}
 

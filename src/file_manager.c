@@ -2,6 +2,7 @@
 #include "file_manager.h"
 #include <stdlib.h>
 #include "logger.h"
+#include <errno.h>
 #include <sys/stat.h>
 
 uint32_t 
@@ -169,3 +170,18 @@ get_file_data(const char *file_path, __time_t* time, __off_t* size){
     return true;
 }
 
+int 
+dir_valid(const char* path){
+    DIR* dir = opendir(path);
+    if (dir) {
+        closedir(dir);
+        //exists
+        return 1;
+    } else if (ENOENT == errno) {
+        //doesnt exist
+        return 0;
+    } else {
+        //something else
+        return -1;
+    }
+}
