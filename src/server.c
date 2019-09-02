@@ -162,8 +162,15 @@ server_IO(f_server* fs){
                 fclose(ins.fptr);
                 break;
             }
-            case if_REM:{ 
-                int n = remove(ins.arg0);
+            case if_REM:{
+                char buffer[255];
+                char* temp = prepare_path(buffer, fc, ins.arg0);
+                if(temp == NULL){
+                    Log("ERROR if_REM."); //fix
+                    break;
+                }
+
+                int n = remove(buffer);
                 if(n == -1){
                     Log("Failed to remove file %s.", ins.arg0);
                 } else {
@@ -171,12 +178,21 @@ server_IO(f_server* fs){
                 break;
             }
             case if_UP:{
-                int n = remove(ins.arg0);
+                char buffer_e[255];
+                char buffer_u[255];
+                char* temp_e = prepare_path(buffer_e, fc, ins.arg0);
+                char* temp_u = prepare_path(buffer_u, fc, ins.arg1);
+                if(temp_e == NULL || temp_u == NULL){
+                    Log("ERROR if_REM."); //fix
+                    break;
+                }
+
+                int n = remove(buffer_e);
                 if(n == -1){
                     Log("Failed to remove file %s.", ins.arg0);
                 }
 
-                ins.fptr = fopen(ins.arg1,"w");
+                ins.fptr = fopen(buffer_u,"w");
                 if(ins.fptr == NULL) { 
                     Log("Running instruction %s failed to open file %s", 
                         get_ins_name(ins.flag), ins.arg0);
@@ -187,7 +203,7 @@ server_IO(f_server* fs){
                 if(nn == 0){
                     Log("Failed reading file because client closed mid send.");
                     fclose(ins.fptr);
-                    remove(ins.arg0);
+                    remove(buffer_u);
                 } else { 
                     fclose(ins.fptr);
                 }
@@ -444,7 +460,7 @@ rev_dir(f_client *fc){
 
     //go one directory back
     memcpy(buffer, fc->f_directory, dir_len + 1);
-    for(int i = dir_len; i > fc->root_end; i--){
+    for(int i = dir_len; i >= fc->root_end - 1; i--){
         if(buffer[i] == '/') {
             if(counter == 1){
                 buffer[i + 1] = '\0';
