@@ -1,22 +1,27 @@
 #ifndef _FILE_MANAGER_H_
 #define _FILE_MANAGER_H_
 
+#define _XOPEN_SOURCE 500
+
+#include <ftw.h>
 #include <stdio.h>
-#include <ctype.h>
+#include <stdlib.h>
 #include <string.h>
 #include <inttypes.h>
 #include <stdbool.h>
 #include <dirent.h>
+
+
 
 #ifdef __arm__
     #define ROOT "/home/pi/Root/"
 #else
     #define ROOT "/home/duler/Desktop/Root/"
 #endif
+#define FILE_CHUNK      1024
+#define MAX_FILE_SIZE   INT32_MAX
+#define ARG_SIZE        100
 
-#define FILE_CHUNK 1024
-#define MAX_FILE_SIZE INT32_MAX
-#define ARG_SIZE 100
 typedef uint8_t BYTE;
 
 typedef enum{
@@ -53,5 +58,5 @@ BYTE *get_dir(Instruction *ins);
 char* get_ins_name(instruction_flag flag);
 bool get_file_data(const char *file_path, __time_t* time, __off_t* size);
 int dir_valid(const char* path);
-
+int all_rem(char *path);
 #endif

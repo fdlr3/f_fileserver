@@ -1,9 +1,7 @@
-#define D_BSD_SOURCE
+#define _DEFAULT_SOURCE
 #include "file_manager.h"
-#include <stdlib.h>
 #include "logger.h"
 #include <errno.h>
-#include <sys/stat.h>
 
 uint32_t 
 parse_4_bytearr(BYTE* arr){
@@ -29,7 +27,6 @@ file_size(FILE *fp){
 Instruction 
 init_instruction(BYTE* barr){
     Instruction ins;
-    size_t      root_len = strlen(ROOT);
 
     memset(&ins, 0, sizeof(Instruction));
     ins.valid = true;
@@ -157,3 +154,21 @@ dir_valid(const char* path){
         return -1;
     }
 }
+
+
+int 
+un_remove(const char* fpath, const struct stat* sb, 
+int typeflag, struct FTW* ftwbuf) {
+    int rv = remove(fpath);
+    if (rv)
+        perror(fpath);
+
+    return rv;
+}
+
+int 
+all_rem(char *path)
+{
+    return nftw(path, un_remove, 64, FTW_DEPTH | FTW_PHYS);
+}
+

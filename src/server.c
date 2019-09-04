@@ -227,7 +227,7 @@ server_IO(f_server* fs){
                 }
 
                 buffer = get_dir(&ins);
-                len = strlen((char*)buffer);
+                len = strlen((char*)buffer) + 1;
                 cur_len = len;
                 //send data length
                 parse_num(buffer_len, len);
@@ -296,7 +296,7 @@ server_IO(f_server* fs){
                 BYTE size_buff[4];
                 parse_num(size_buff, fc->fdir_len);
                 send_data(fc->fd, size_buff, 4);
-                send_data(fc->fd, fc->f_directory, fc->fdir_len);
+                send_data(fc->fd, (BYTE*)fc->f_directory, fc->fdir_len);
                 break;
             }
             default:{
@@ -508,7 +508,7 @@ remove_folder(f_client *fc, const char* folder){
     if(temp == NULL){
         return false;
     }
-    result = rmdir(buffer);
+    result = 0; /*all_rem(buffer);*/ printf("TODO -> REMOVE_FOLDER server.c");
 
     return result == 0 ? true : false;
 }
