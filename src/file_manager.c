@@ -91,7 +91,6 @@ get_ins_name(instruction_flag flag){
         case if_REM:            return "REMOVE";
         case if_DIR:            return "DIRECTORY";
         case if_AUTH:           return "AUTHENTICATE";
-        case if_LOGIN_STATUS:   return "LOGINSTATUS";
         case if_GO:             return "GO";
         case if_REV:            return "REV";
         case if_PATH:           return "PATH";

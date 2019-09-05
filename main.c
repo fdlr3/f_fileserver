@@ -4,7 +4,7 @@
 #include "src/file_manager.h"
 #include "src/server.h"
 #include "src/logger.h"
-#define PORT_N 1553
+#define PORT_N 1554
 
 int main(){
     //setup logger

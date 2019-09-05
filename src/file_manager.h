@@ -31,12 +31,11 @@ typedef enum{
     if_UP               = 0x03,
     if_DIR              = 0x04,
     if_AUTH             = 0x05,
-    if_LOGIN_STATUS     = 0x06,
-    if_GO               = 0x07, //go to directory
-    if_REV              = 0x08, //Go back in directory
-    if_PATH             = 0x09,
-    if_MKFD             = 0x0A,
-    if_RMFD             = 0x0B
+    if_GO               = 0x06, //go to directory
+    if_REV              = 0x07, //Go back in directory
+    if_PATH             = 0x08,
+    if_MKFD             = 0x09,
+    if_RMFD             = 0x0A
 } instruction_flag;
 
 typedef struct{

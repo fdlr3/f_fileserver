@@ -105,8 +105,7 @@ server_IO(f_server* fs){
         }
 
         //check if user is not authenticated
-        if(!check_auth(fc) && 
-            !(ins.flag == if_AUTH || ins.flag == if_LOGIN_STATUS)) { 
+        if(!check_auth(fc) && ins.flag != if_AUTH) { 
             Log("Instruction denied because user is not authenticated.");
             continue; 
         }
@@ -251,29 +250,24 @@ server_IO(f_server* fs){
                 break;
             }
             case if_AUTH:{
-                if(!check_auth(fc)){
-                    if(authenticate(ins.arg0, ins.arg1)){
-                        fc->authenticated = true;
-                        Log("User %s is authenticated.", ins.arg0);
-                    } else {
-                        Log("Cannot authenticate user %s.", ins.arg0);
-                    }
-                }
-                break;
-            }
-            case if_LOGIN_STATUS:{
                 //random numbers 
                 BYTE buffer[5] = { 0x7F, 0x3E, 0x24, 0x55 };
                 BYTE logged_in_flag     = 0xFF;
                 BYTE logged_out_flag    = 0x00;
 
-                if(check_auth(fc)){
-                    buffer[4] = logged_in_flag;
-                    send_data(fc->fd, buffer, 5);
+                if(!check_auth(fc)){
+                    if(authenticate(ins.arg0, ins.arg1)){
+                        fc->authenticated = true;
+                        buffer[4] = logged_in_flag;
+                        Log("User %s is authenticated.", ins.arg0);
+                    } else {
+                        buffer[4] = logged_out_flag;
+                        Log("Cannot authenticate user %s.", ins.arg0);
+                    }
                 } else {
-                    buffer[4] = logged_out_flag;
-                    send_data(fc->fd, buffer, 5);
+                    buffer[4] = logged_in_flag;
                 }
+                send_data(fc->fd, buffer, 5);
                 break;
             }
             case if_GO:{
@@ -294,9 +288,9 @@ server_IO(f_server* fs){
             }
             case if_PATH:{
                 BYTE size_buff[4];
-                parse_num(size_buff, fc->fdir_len);
+                parse_num(size_buff, fc->fdir_len + 1);
                 send_data(fc->fd, size_buff, 4);
-                send_data(fc->fd, (BYTE*)fc->f_directory, fc->fdir_len);
+                send_data(fc->fd, (BYTE*)fc->f_directory, fc->fdir_len + 1);
                 break;
             }
             default:{
