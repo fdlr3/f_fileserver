@@ -19,7 +19,7 @@ typedef uint8_t BYTE;
 
 //path to config file
 #ifdef __arm__
-    #define CONFIGPATH "/home/pi/Documents/Root/Config/config.txt
+    #define CONFIGPATH "/home/pi/Documents/Root/Config/config.txt"
 #elif unix
     #ifdef JERNEJ
         #define CONFIGPATH "/home/jernej/Root/config.txt"

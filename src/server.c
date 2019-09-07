@@ -461,6 +461,21 @@ f_dir(f_client* _fc, Instruction* _ins)
     return 0;
 }
 
+int 
+authenticate_u(const char* _id, const char* _hash)
+{
+    int     ID_AUTH = 1,
+            PW_AUTH = 1;
+    char    buffer[256] = {0};
+    
+    get_tag(buffer, ID_TAG);
+    ID_AUTH = strcmp(buffer, _id);
+    get_tag(buffer, PW_TAG);
+    PW_AUTH = strcmp(buffer, _hash);
+    
+    return ID_AUTH && PW_AUTH;
+}
+
 static int     
 f_auth(f_client* _fc, Instruction* _ins)
 {
@@ -608,17 +623,3 @@ f_rmfd(f_client* _fc, Instruction* _ins)
     return result;
 }
 
-int 
-authenticate_u(const char* _id, const char* _hash)
-{
-    int     ID_AUTH = 1,
-            PW_AUTH = 1;
-    char    buffer[256] = {0};
-    
-    get_tag(buffer, ID_TAG);
-    ID_AUTH = strcmp(buffer, _id);
-    get_tag(buffer, PW_TAG);
-    PW_AUTH = strcmp(buffer, _hash);
-    
-    return ID_AUTH && PW_AUTH;
-}
