@@ -14,25 +14,47 @@
 #include <sys/types.h>
 #include <sys/stat.h>
 
+static char*    prepare_path(char* _src, f_client *_fc, const char* _file);
+static void     clean_client(f_client *_fc);
+
+static int      f_push      (f_client* _fc, Instruction* _ins);
+static int      f_get       (f_client* _fc, Instruction* _ins);
+static int      f_rm        (f_client* _fc, Instruction* _ins);
+static int      f_up        (f_client* _fc, Instruction* _ins);
+static int      f_dir       (f_client* _fc, Instruction* _ins);
+static int      f_auth      (f_client* _fc, Instruction* _ins);
+static int      f_go        (f_client* _fc, Instruction* _ins);
+static int      f_rev       (f_client* _fc, Instruction* _ins);
+static int      f_path      (f_client* _fc, Instruction* _ins);
+static int      f_mkfd      (f_client* _fc, Instruction* _ins);
+static int      f_rmfd      (f_client* _fc, Instruction* _ins);
+
+static int      send_data   (int _fd, BYTE* _buffer, size_t _n);
+static int      read_data   (int _fd, BYTE* _buffer, size_t _n);
+static int      send_file   (FILE *_fp, f_client* _fc);
+static int      read_file   (FILE *_fp, f_client* _fc, size_t _size);
+
+
+
+
 void 
-start_server(int16_t port, f_server *server){
-    memset(server, 0, sizeof(f_server));
-    server->fc.authenticated = false;
-    server->port_num = port;
-    server->close_server = close_server;
-    server->listen_server = listen_server;
-    clean_client(&(server->fc));
+start_server(int16_t _port, f_server* _server)
+{
+    memset(_server, 0, sizeof(f_server));
+    _server->fc.auth = false;
+    _server->port_num = _port;
+    clean_client(&(_server->fc));
 
     //setup server struct
-    struct sockaddr_in* sd = &server->server_addr;
+    struct sockaddr_in* sd = &(_server->server_addr);
     sd->sin_family = AF_INET;
     sd->sin_addr.s_addr = INADDR_ANY;
-    sd->sin_port = htons(port);
+    sd->sin_port = htons(_port);
 
     //opens a new socket 
     //if return is -1 it failed
     //else it returns the file descriptor
-    int* s_fd = &(server->server_fd);
+    int* s_fd = &(_server->server_fd);
     *s_fd = socket(AF_INET, SOCK_STREAM, 0);
     if(*s_fd < 0){
         
@@ -48,7 +70,7 @@ start_server(int16_t port, f_server *server){
     //binds the local address to the socket
     if(bind(
             *s_fd,
-            (struct sockaddr*) &server->server_addr, 
+            (struct sockaddr*) &(_server->server_addr), 
             sizeof(struct sockaddr_in)) < 0){
         Log("Failed binding local address to the socket.");
         exit(EXIT_FAILURE);
@@ -57,43 +79,45 @@ start_server(int16_t port, f_server *server){
 }
 
 void 
-listen_server(void *server){
-    f_server *serverp = server;
-
-    if (listen(serverp->server_fd, 1) == -1) {
+listen_server(f_server* _server)
+{
+    if (listen(_server->server_fd, 1) == -1) {
         Log("Error listening for client.");
     }
     Log("Listening for new client.");
 
-    serverp->fc.fd = accept(serverp->server_fd,
-                    (struct sockaddr *)&(serverp->fc.addr),
-                    &serverp->fc.clilen);
-    if (serverp->server_fd < 0) {
+    _server->fc.fd = accept(_server->server_fd,
+                    (struct sockaddr *)&(_server->fc.addr),
+                    &_server->fc.clilen);
+    if (_server->server_fd < 0) {
         Log("Error accepting cliet.");
     }
     Log("Client with address: %s and file descriptor: %u successfully accepted.",
-    inet_ntoa(serverp->server_addr.sin_addr),
-    (unsigned int)serverp->fc.fd);
+    inet_ntoa(_server->server_addr.sin_addr),
+    (unsigned int)_server->fc.fd);
 }
 
 void 
-server_IO(f_server* fs){
-    f_client* fc = &(fs->fc);
+server_IO(f_server* _fs)
+{
     Log("Started listening for incoming instructions.");
+
+    f_client*   fc = &(_fs->fc);
     Instruction ins = {0};
-    BYTE ins_buffer[206] = {0};
+    BYTE        ins_buffer[INS_SIZE];
+    int         n;
     while(1){
         //read instruction
-        int n = read_data(fc->fd, ins_buffer, 206);
+        n = read_data(fc->fd, ins_buffer, INS_SIZE);
 
         //check in recieved instruction
         if(n == 0){
             close(fc->fd);
-            clean_client(&(fs->fc));
+            clean_client(fc);
             Log("Client disconnected from the server.");
             return;
         }
-        else if(n != 206){
+        else if(n != INS_SIZE){
             Log("Instruction size was the incorrect size of %i", n);
         }
 
@@ -105,192 +129,54 @@ server_IO(f_server* fs){
         }
 
         //check if user is not authenticated
-        if(!check_auth(fc) && ins.flag != if_AUTH) { 
+        if(!(fc->auth) && ins.flag != if_AUTH) { 
             Log("Instruction denied because user is not authenticated.");
             continue; 
         }
 
         switch(ins.flag){
             case if_PUSH:{
-                char buffer[255];
-                char* temp = prepare_path(buffer, fc, ins.arg0);
-                if(temp == NULL){
-                    Log("ERROR if_PUSH."); //fix
-                    break;
-                }
-                ins.fptr = fopen(buffer, "w");
-                if(ins.fptr == NULL) { 
-                    Log("Running instruction %s failed to open file %s", 
-                        get_ins_name(ins.flag), ins.arg0);
-                    continue;
-                }
-                
-                int n = read_file(ins.fptr, fc, ins.file_size);
-                if(n == 0){
-                    Log("Failed reading file because client closed mid send.");
-                    fclose(ins.fptr);
-                    remove(ins.arg0);
-                } else { 
-                    fclose(ins.fptr);
-                }
+                f_push(fc, &ins);
                 break;
             }
             case if_GET:{
-                BYTE s_buff[4] = {0};
-                memset(s_buff, 0, 4);
-
-                char buffer[255];
-                char* temp = prepare_path(buffer, fc, ins.arg0);
-                if(temp == NULL){
-                    Log("ERROR if_PUSH."); //fix
-                    break;
-                }
-
-                ins.fptr = fopen(buffer, "rb");
-                if(ins.fptr == NULL) { 
-                    Log("Running instruction %s failed to open file %s", 
-                        get_ins_name(ins.flag), ins.arg0);
-                    continue;
-                }
-                //send 4BYTES of file size
-                size_t size = file_size(ins.fptr);
-                parse_num(s_buff, size);
-                send_data(fc->fd, s_buff, 4);
-                //send actual file
-                send_file(ins.fptr, fc);
-                fclose(ins.fptr);
+                f_get(fc, &ins);
                 break;
             }
             case if_REM:{
-                char buffer[255];
-                char* temp = prepare_path(buffer, fc, ins.arg0);
-                if(temp == NULL){
-                    Log("ERROR if_REM."); //fix
-                    break;
-                }
-
-                int n = remove(buffer);
-                if(n == -1){
-                    Log("Failed to remove file %s.", ins.arg0);
-                } else {
-                }
+                f_rm(fc, &ins);
                 break;
             }
             case if_UP:{
-                char buffer_e[255];
-                char buffer_u[255];
-                char* temp_e = prepare_path(buffer_e, fc, ins.arg0);
-                char* temp_u = prepare_path(buffer_u, fc, ins.arg1);
-                if(temp_e == NULL || temp_u == NULL){
-                    Log("ERROR if_REM."); //fix
-                    break;
-                }
-
-                int n = remove(buffer_e);
-                if(n == -1){
-                    Log("Failed to remove file %s.", ins.arg0);
-                }
-
-                ins.fptr = fopen(buffer_u,"w");
-                if(ins.fptr == NULL) { 
-                    Log("Running instruction %s failed to open file %s", 
-                        get_ins_name(ins.flag), ins.arg0);
-                    continue;
-                }
-
-                int nn = read_file(ins.fptr, fc, ins.file_size);
-                if(nn == 0){
-                    Log("Failed reading file because client closed mid send.");
-                    fclose(ins.fptr);
-                    remove(buffer_u);
-                } else { 
-                    fclose(ins.fptr);
-                }
+                f_up(fc, &ins);
                 break;
             }
             case if_DIR:{ 
-                BYTE*   buffer          = NULL;
-                size_t  i               = 0, 
-                        len             = 0, 
-                        send_length     = 0,
-                        cur_len         = 0;
-                BYTE    buffer_len[4];
-                memset(buffer_len, 0 , 4);
-
-                
-                ins.dirptr = opendir(fc->f_directory);
-                if(ins.dirptr == NULL) { 
-                    Log("Running instruction %s failed to open directory", 
-                        get_ins_name(ins.flag));
-                    continue;
-                }
-
-                buffer = get_dir(&ins);
-                len = strlen((char*)buffer) + 1;
-                cur_len = len;
-                //send data length
-                parse_num(buffer_len, len);
-                send_data(fc->fd, buffer_len, 4);
-                //send data
-                while(i != len){
-                    send_length = cur_len >= FILE_CHUNK ? FILE_CHUNK : cur_len;
-                    if(send_length == FILE_CHUNK) {
-                        cur_len -= FILE_CHUNK;
-                    } else {
-                        cur_len = 0;
-                    }
-                    send_data(fc->fd, buffer + i,send_length);
-                    i += send_length;
-                }
-
-                if(buffer) {
-                    free(buffer);
-                }
-                closedir(ins.dirptr);
+                f_dir(fc, &ins);
                 break;
             }
             case if_AUTH:{
-                //random numbers 
-                BYTE buffer[5] = { 0x7F, 0x3E, 0x24, 0x55 };
-                BYTE logged_in_flag     = 0xFF;
-                BYTE logged_out_flag    = 0x00;
-
-                if(!check_auth(fc)){
-                    if(authenticate(ins.arg0, ins.arg1)){
-                        fc->authenticated = true;
-                        buffer[4] = logged_in_flag;
-                        Log("User %s is authenticated.", ins.arg0);
-                    } else {
-                        buffer[4] = logged_out_flag;
-                        Log("Cannot authenticate user %s.", ins.arg0);
-                    }
-                } else {
-                    buffer[4] = logged_in_flag;
-                }
-                send_data(fc->fd, buffer, 5);
+                f_auth(fc, &ins);
                 break;
             }
             case if_GO:{
-                if(go_dir(fc, ins.arg0)){
-                    Log("Successful switching to %s", fc->f_directory);
-                } else {
-                    Log("Unsucessful GO instruction.");
-                }
+                f_go(fc, &ins);
                 break;
             }
             case if_REV:{
-                if(rev_dir(fc)){
-                    Log("Successful reversing to %s", fc->f_directory);
-                } else {
-                    Log("Unsucessful REV instruction.");
-                }
+                f_rev(fc, &ins);
                 break;
             }
             case if_PATH:{
-                BYTE size_buff[4];
-                parse_num(size_buff, fc->fdir_len + 1);
-                send_data(fc->fd, size_buff, 4);
-                send_data(fc->fd, (BYTE*)fc->f_directory, fc->fdir_len + 1);
+                f_path(fc, &ins);
+                break;
+            }
+            case if_MKFD: {
+                f_mkfd(fc, &ins);
+                break;
+            }
+            case if_RMFD: {
+                f_rmfd(fc, &ins);
                 break;
             }
             default:{
@@ -301,78 +187,86 @@ server_IO(f_server* fs){
 }
 
 void 
-close_server(void *server){
-    f_server *serverp = server;
-    close(serverp->server_fd);
-    close(serverp->fc.fd);
+close_server(f_server *_fs)
+{
+    close(_fs->server_fd);
+    close(_fs->fc.fd);
 }
 
-void 
-clean_client(f_client *fc){
-    memset(fc, 0, sizeof(f_client));
+
+
+
+static void 
+clean_client(f_client *_fc)
+{
+    memset(_fc, 0, sizeof(f_client));
     size_t root_len = strlen(ROOT);
-    strcpy(fc->f_directory, ROOT);
-    fc->fdir_len = root_len;
-    fc->root_end = root_len;
+    strcpy(_fc->f_directory, ROOT);
+    _fc->fdir_len = root_len;
+    _fc->root_end = root_len;
 }
 
 
-int 
-send_file(FILE *fp, f_client* fc){
+static int 
+send_file(FILE *_fp, f_client* _fc)
+{
     size_t  read_size   = FILE_CHUNK,
             n = 0;
     BYTE    file_buffer[FILE_CHUNK];
     
-    while((n = fread(file_buffer, 1, read_size, fp)) > 0){
-        send_data(fc->fd, file_buffer, n);
+    while((n = fread(file_buffer, 1, read_size, _fp)) > 0){
+        send_data(_fc->fd, file_buffer, n);
     }
     return 1;
 }
 
-int 
-read_file(FILE *fp, f_client* fc, size_t size){
+static int 
+read_file(FILE *_fp, f_client* _fc, size_t _size)
+{
     BYTE    read_buffer[FILE_CHUNK];
-    size_t  pack_size   = size >= FILE_CHUNK ? FILE_CHUNK : size,
+    size_t  pack_size   = _size >= FILE_CHUNK ? FILE_CHUNK : _size,
             data_read   = 0,
             data_wrote  = 0;
-    Log("Reading file with size: %u bytes or %u MB.", size, size / 1000);
+    Log("Reading file with size: %u bytes or %u MB.", _size, _size / 1000);
 
-    while(size > 0){
-        pack_size = size < FILE_CHUNK ? size : FILE_CHUNK;
+    while(_size > 0){
+        pack_size = _size < FILE_CHUNK ? _size : FILE_CHUNK;
         //read data
-        int nn = read_data(fc->fd,read_buffer, pack_size);
+        int nn = read_data(_fc->fd,read_buffer, pack_size);
         if(nn == 0) { return 0; }
         else { data_read += nn; }
         //write to file
-        data_wrote += fwrite(read_buffer, sizeof(BYTE), pack_size, fp);
-        size = size >= pack_size ? size - pack_size : 0;
+        data_wrote += fwrite(read_buffer, sizeof(BYTE), pack_size, _fp);
+        _size = _size >= pack_size ? _size - pack_size : 0;
     }
     Log("Read %u bytes and wrote %u bytes to file", data_read, data_wrote);
     return 1;
 }
 
-int 
-send_data(int fd, BYTE* buffer, size_t n){
+static int 
+send_data(int _fd, BYTE* _buffer, size_t _n)
+{
     int     offset  = 0;
     size_t  sent    = 0;
 
-    while((sent = send(fd, buffer + offset, n, 0)) > 0 || sent == -1){
+    while((sent = send(_fd, _buffer + offset, _n, 0)) > 0 || sent == -1){
         if(sent > 0) {
             offset += sent;
-            n -= sent;
+            _n -= sent;
         }
     }  
     return (int)sent;
 }
 
-int
-read_data(int fd, BYTE* buffer, size_t n){
+static int
+read_data(int _fd, BYTE* _buffer, size_t _n)
+{
     int read_b = 0;
     int result = 0;
 
-    while (read_b < n)
+    while (read_b < _n)
     {
-        result = read(fd, buffer + read_b, n - read_b);
+        result = read(_fd, _buffer + read_b, _n - read_b);
         if(result == 0){
             return 0;
         }
@@ -382,48 +276,242 @@ read_data(int fd, BYTE* buffer, size_t n){
 }
 
 
-bool 
-check_auth(f_client *fc){
-    return fc->authenticated ? true : false;
+static char* 
+prepare_path(char* _src, f_client *_fc, const char* _file)
+{
+    size_t file_len   = strlen(_file);
+    size_t dir_len    = _fc->fdir_len;
+
+    //new path length is larger than 255 or file len is 0
+    if((file_len + dir_len + 1 > BUFF_SIZE) || file_len == 0){
+        return NULL;
+    }
+
+    memcpy(_src, _fc->f_directory, dir_len);
+    memcpy(_src + dir_len, _file, file_len + 1);
+
+    return _src;
 }
 
-bool 
-authenticate(const char* id, const char* hash){
-    bool ID_AUTH = false,
-         PW_AUTH = false;
 
-    char    buffer[256] = {0};
-    get_tag(buffer, ID_TAG);
-    if(strcmp(buffer, id) == 0) { ID_AUTH = true; }
-    get_tag(buffer, PW_TAG);
-    if(strcmp(buffer, hash) == 0) { PW_AUTH = true; }
+//#################################################################
+
+static int     
+f_push(f_client* _fc, Instruction* _ins)
+{
+    char    path_buff[BUFF_SIZE];
+    int     n;
+    char    *temp_ptr = NULL;
+
+    temp_ptr = prepare_path(path_buff, _fc, _ins->arg0);
+    if (temp_ptr == NULL) {
+        return e_PATH;
+    }
+
+    _ins->fptr = fopen(path_buff, "w");
+    if (_ins->fptr == NULL) {
+        return e_FILE;
+    }
+
+    n = read_file(_ins->fptr, _fc, _ins->file_size);
+    if (n == 0) {
+        fclose(_ins->fptr);
+        remove(_ins->arg0);
+        return e_READ_FILE;
+    }
+    else {
+        fclose(_ins->fptr);
+        return 0;
+    }
+}
+
+static int    
+f_get(f_client* _fc, Instruction* _ins)
+{
+    BYTE        size_buff[UI32_B];
+    char        path_buff[BUFF_SIZE];
+    char*       temp_ptr = NULL;
+    uint32_t    f_size;
     
-    return ID_AUTH && PW_AUTH;
+    temp_ptr = prepare_path(path_buff, _fc, _ins->arg0);
+    if (temp_ptr == NULL) {
+        return e_PATH;
+    }
+
+    _ins->fptr = fopen(path_buff, "rb");
+    if (_ins->fptr == NULL) {
+        return e_FILE;
+    }
+
+    //1. Send file size
+    f_size = file_size(_ins->fptr);
+    if(f_size == 0){
+        fclose(_ins->fptr);
+        return e_FILE_SIZE;
+    }
+    memset(size_buff, 0, UI32_B);
+    memcpy(size_buff, &f_size, UI32_B);
+    send_data(_fc->fd, size_buff, UI32_B);
+
+    //2. Send actual file
+    send_file(_ins->fptr, _fc);
+    fclose(_ins->fptr);
+
+    return 0;
 }
 
+static int     
+f_rm(f_client* _fc, Instruction* _ins)
+{
+    char    path_buff[BUFF_SIZE];
+    char*   temp_ptr = NULL;
 
-bool 
-go_dir(f_client *fc, const char* dir){
-    char            buffer[255];
-    size_t          dir_len = strlen(dir);
+    temp_ptr = prepare_path(path_buff, _fc, _ins->arg0);
+    if (temp_ptr == NULL) {
+        return e_PATH;
+    }
+
+    if (remove(path_buff) == -1) {
+        return e_REMOVE_FILE;
+    }
+    return 0;
+}
+
+static int     
+f_up(f_client* _fc, Instruction* _ins)
+{
+    char path_buffe[BUFF_SIZE];
+    char path_buffu[BUFF_SIZE];
+    char* temp_eptr = NULL;
+    char* temp_uptr = NULL;
+
+    temp_eptr = prepare_path(path_buffe, _fc, _ins->arg0);
+    temp_uptr = prepare_path(path_buffu, _fc, _ins->arg1);
+
+    if (temp_eptr == NULL || temp_uptr == NULL) {
+        return e_PATH;
+    }
+
+    if (remove(path_buffe) == -1) {
+        return e_REMOVE_FILE;
+    }
+
+    _ins->fptr = fopen(path_buffu, "w");
+    if (_ins->fptr == NULL) {
+        return e_FILE;
+    }
+
+    if (read_file(_ins->fptr, _fc, _ins->file_size) == 0) {
+        fclose(_ins->fptr);
+        remove(path_buffu);
+        return e_READ_FILE;
+    }
+    fclose(_ins->fptr);
+
+    return 0;
+}
+
+static int
+f_dir(f_client* _fc, Instruction* _ins)
+{
+    //FIXIT
+    BYTE *buffer = NULL;
+    size_t i = 0,
+           len = 0,
+           send_length = 0,
+           cur_len = 0;
+    BYTE buffer_len[UI32_B];
+    memset(buffer_len, 0, 4);
+
+    _ins->dirptr = opendir(_fc->f_directory);
+    if (_ins->dirptr == NULL)
+    {
+        Log("Running instruction %s failed to open directory",
+            get_ins_name(_ins->flag));
+        return 1;
+    }
+
+    buffer = dir_contents(_ins);
+    len = strlen((char *)buffer) + 1;
+    cur_len = len;
+    //send data length
+    memcpy(buffer_len, &len, UI32_B);
+    send_data(_fc->fd, buffer_len, 4);
+    //send data
+    while (i != len)
+    {
+        send_length = cur_len >= FILE_CHUNK ? FILE_CHUNK : cur_len;
+        if (send_length == FILE_CHUNK)
+        {
+            cur_len -= FILE_CHUNK;
+        }
+        else
+        {
+            cur_len = 0;
+        }
+        send_data(_fc->fd, buffer + i, send_length);
+        i += send_length;
+    }
+
+    if (buffer)
+    {
+        free(buffer);
+    }
+    closedir(_ins->dirptr);
+    return 0;
+}
+
+static int     
+f_auth(f_client* _fc, Instruction* _ins)
+{
+    //FIXIT
+    BYTE buffer[5] = {0x7F, 0x3E, 0x24, 0x55};
+    BYTE logged_in_flag = 0xFF;
+    BYTE logged_out_flag = 0x00;
+
+    if (!(_fc->auth))
+    {
+        if (authenticate(_ins->arg0, _ins->arg1))
+        {
+            _fc->auth = true;
+            buffer[4] = logged_in_flag;
+            Log("User %s is authenticated.", _ins->arg0);
+        }
+        else
+        {
+            buffer[4] = logged_out_flag;
+            Log("Cannot authenticate user %s.", _ins->arg0);
+        }
+    }
+    else
+    {
+        buffer[4] = logged_in_flag;
+    }
+    send_data(_fc->fd, buffer, 5);
+    return 0;
+}
+
+static int     
+f_go(f_client* _fc, Instruction* _ins)
+{
+    char            buffer[BUFF_SIZE];
+    size_t          dir_len = strlen(_ins->arg0);
     const char*     slash   = "/\0";
     size_t          len     = 0;
     int             valid;
 
     //check if size wont reach higher of 255 or dir length is 0
-    if(dir_len == 0){
-        Log("Directory length is 0.");
-        return false;
+    if(dir_len == 0) {
+        return e_PATH_ZERO_LEN;
     }
-    if(dir_len + fc->fdir_len + 2 > 255){
-        Log("Directory size is larger than 255 bytes.");
-        return false;
+    if(dir_len + _fc->fdir_len + 2 > BUFF_SIZE) {
+        return e_PATH_OVERFLOW;
     }
 
     //prepare new path to buffer
-    memcpy(buffer, fc->f_directory, fc->fdir_len);
-    len = fc->fdir_len;
-    memcpy(buffer + len, dir, dir_len);
+    memcpy(buffer, _fc->f_directory, _fc->fdir_len);
+    len = _fc->fdir_len;
+    memcpy(buffer + len, _ins->arg0, dir_len);
     len += dir_len;
     memcpy(buffer + len, slash, 2);
     len += 1;
@@ -431,30 +519,32 @@ go_dir(f_client *fc, const char* dir){
     //check if dir is valid
     valid = dir_valid(buffer);
     if(valid == 1) {
-        memcpy(fc->f_directory, buffer, len+1);
-        fc->fdir_len = len;
-        return true;
+        memcpy(_fc->f_directory, buffer, len+1);
+        _fc->fdir_len = len;
+
+        return 0;
     } else {
-        return false;
+        return e_FOLDER_NOT_FOUND;
     }
 }
 
-bool 
-rev_dir(f_client *fc){
-    char buffer[255];
-    size_t dir_len      = fc->fdir_len;
+static int     
+f_rev(f_client* _fc, Instruction* _ins)
+{
+    char buffer[BUFF_SIZE];
+    size_t dir_len      = _fc->fdir_len;
     int counter         = 0;
     int valid;
     int buffer_len;
 
     //if current directory is root dont go back
-    if(fc->fdir_len == fc->root_end){
-        return false;
+    if(_fc->fdir_len == _fc->root_end){
+        return e_FOLDER;
     }
 
     //go one directory back
-    memcpy(buffer, fc->f_directory, dir_len + 1);
-    for(int i = dir_len; i >= fc->root_end - 1; i--){
+    memcpy(buffer, _fc->f_directory, dir_len + 1);
+    for(int i = dir_len; i >= _fc->root_end - 1; i--){
         if(buffer[i] == '/') {
             if(counter == 1){
                 buffer[i + 1] = '\0';
@@ -468,59 +558,52 @@ rev_dir(f_client *fc){
     valid = dir_valid(buffer);
     if(valid == 1) {
         buffer_len = strlen(buffer);
-        memcpy(fc->f_directory, buffer, buffer_len + 1);
-        fc->fdir_len = buffer_len;
-        return true;
+        memcpy(_fc->f_directory, buffer, buffer_len + 1);
+        _fc->fdir_len = buffer_len;
+
+        return 0;
     } else {
-        return false;
+        return e_FOLDER_NOT_FOUND;
     }
 }
 
+static int     
+f_path(f_client* _fc, Instruction* _ins)
+{
+    BYTE size_buff[UI32_B];
+    uint32_t size = (_fc->fdir_len) + 1;
 
-bool 
-make_folder(f_client *fc, const char* folder){
-    char buffer[255];
-    char* temp;
-    int result;
+    memcpy(size_buff, &(size), UI32_B);
+    send_data(_fc->fd, size_buff, UI32_B);
+    send_data(_fc->fd, (BYTE *)_fc->f_directory, _fc->fdir_len);
 
-    temp = prepare_path(buffer, fc, folder);
-    if(temp == NULL){
-        return false;
-    }
-    result = mkdir(buffer, 0700);
-
-    return result == 0 ? true : false;
+    return 0;
 }
 
-bool 
-remove_folder(f_client *fc, const char* folder){
-    char buffer[255];
-    char* temp;
-    int result;
+static int     
+f_mkfd(f_client* _fc, Instruction* _ins)
+{
+    char buffer[BUFF_SIZE];
 
-    temp = prepare_path(buffer, fc, folder);
-    if(temp == NULL){
-        return false;
+    if(prepare_path(buffer, _fc, _ins->arg0) == NULL){
+        return e_PATH;
     }
-    result = 0; /*all_rem(buffer);*/ printf("TODO -> REMOVE_FOLDER server.c");
+    int result = mkdir(buffer, 0700);
 
-    return result == 0 ? true : false;
+    //FIXIT
+    return result;
 }
 
+static int     
+f_rmfd(f_client* _fc, Instruction* _ins)
+{
+    char buffer[BUFF_SIZE];
 
-char* 
-prepare_path(char* src, f_client *fc, const char* file){
-    size_t file_len   = strlen(file);
-    size_t dir_len      = fc->fdir_len;
-
-    //new path length is larger than 255 or file len is 0
-    if((file_len + dir_len + 1 > 255) || file_len == 0){
-        return NULL;
+    if(prepare_path(buffer, _fc, _ins->arg0) == NULL){
+        return e_PATH;
     }
+    int result = remove_directory(buffer);
 
-    memcpy(src, fc->f_directory, dir_len);
-    memcpy(src + dir_len, file, file_len + 1);
-
-    return src;
+    //FIXIT
+    return result;
 }
-

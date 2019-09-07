@@ -13,7 +13,7 @@ int main(){
     start_server(PORT_N, &server);
 
     while(1){
-        server.listen_server(&server);
+        listen_server(&server);
         server_IO(&server);
     }
 

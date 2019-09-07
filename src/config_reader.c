@@ -37,7 +37,6 @@ get_tag(char* dest, config_TAG tag){
         if(strcmp(search_tag, buffer) == 0){
             size_t len = strlen(buffer+4);
             strcpy(dest, buffer+4);
-            //FIX
             for(int i = 0; i < len; i++){
                 if(dest[i] == '\n'){
                     dest[i] = '\0';
@@ -50,4 +49,19 @@ get_tag(char* dest, config_TAG tag){
     free(line);
     fclose(fp);
     return dest;
+}
+
+int 
+authenticate(const char* _id, const char* _hash)
+{
+    int     ID_AUTH = 1,
+            PW_AUTH = 1;
+    char    buffer[256] = {0};
+    
+    get_tag(buffer, ID_TAG);
+    ID_AUTH = strcmp(buffer, _id);
+    get_tag(buffer, PW_TAG);
+    PW_AUTH = strcmp(buffer, _hash);
+    
+    return ID_AUTH && PW_AUTH;
 }

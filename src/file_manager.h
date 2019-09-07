@@ -3,26 +3,11 @@
 
 #define _XOPEN_SOURCE 500
 
+#include "fdefines.h"
 #include <ftw.h>
 #include <stdio.h>
-#include <stdlib.h>
-#include <string.h>
-#include <inttypes.h>
 #include <stdbool.h>
 #include <dirent.h>
-
-
-
-#ifdef __arm__
-    #define ROOT "/home/pi/Root/"
-#else
-    #define ROOT "/home/duler/Desktop/Root/"
-#endif
-#define FILE_CHUNK      1024
-#define MAX_FILE_SIZE   INT32_MAX
-#define ARG_SIZE        100
-
-typedef uint8_t BYTE;
 
 typedef enum{
     if_PUSH             = 0x00,
@@ -38,6 +23,18 @@ typedef enum{
     if_RMFD             = 0x0A
 } instruction_flag;
 
+typedef enum{
+    e_PATH = 0x01,
+    e_FILE = 0x02,
+    e_READ_FILE = 0x03,
+    e_FILE_SIZE = 0x04,
+    e_REMOVE_FILE = 0x05,
+    e_PATH_OVERFLOW = 0x06,
+    e_PATH_ZERO_LEN = 0x07,
+    e_FOLDER_NOT_FOUND = 0x08,
+    e_FOLDER = 0x09
+} f_errors;
+
 typedef struct{
     bool valid;
     instruction_flag flag;
@@ -49,13 +46,32 @@ typedef struct{
     DIR *dirptr;
 } Instruction;
 
-Instruction init_instruction(BYTE* barr);
-uint32_t parse_4_bytearr(BYTE* arr);
-void parse_num(BYTE* arr, uint32_t n);
-uint32_t file_size(FILE *fp);
-BYTE *get_dir(Instruction *ins);
-char* get_ins_name(instruction_flag flag);
-bool get_file_data(const char *file_path, __time_t* time, __off_t* size);
-int dir_valid(const char* path);
-int all_rem(char *path);
+
+/*########## DIRECTORY ##########*/
+
+//returns all files and folders in the directory
+BYTE *dir_contents(Instruction *_ins);
+//checks if the directory is valid
+int dir_valid(const char* _path);
+//removes a directory
+int remove_directory(char *_path);
+
+
+
+/*########## INSTRUCTION ##########*/
+
+//creates an instruction
+Instruction init_instruction(BYTE* _barr);
+//returns the full-name of the instruction
+char* get_ins_name(instruction_flag _flag);
+
+
+
+/*########## FILES ##########*/
+
+//returns file size
+uint32_t file_size(FILE *_fp);
+
+
+
 #endif
