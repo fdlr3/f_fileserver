@@ -20,6 +20,12 @@ typedef uint8_t BYTE;
     #define CONFIGPATH "/home/duler/Desktop/Root/Config/config.txt"
 #endif
 
+#ifdef __arm__
+    #define LOG_ROOT "/home/pi/Root/Logs/"
+#else
+    #define LOG_ROOT "/home/duler/Desktop/Root/Logs/"
+#endif
+
 //send or read max packet size
 #define FILE_CHUNK      1024
 //max file size 
