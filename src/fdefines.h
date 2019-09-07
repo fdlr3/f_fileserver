@@ -9,6 +9,8 @@ typedef uint8_t BYTE;
 //path to root
 #ifdef __arm__
     #define ROOT "/home/pi/Root/"
+#elif JERNEJ
+    #define ROOT "/home/jernej/Root/"
 #else
     #define ROOT "/home/duler/Desktop/Root/"
 #endif
@@ -16,12 +18,16 @@ typedef uint8_t BYTE;
 //path to config file
 #ifdef __arm__
     #define CONFIGPATH "/home/pi/Documents/Root/Config/config.txt"
+#elif JERNEJ
+    #define ROOT "/home/jernej/Root/config.txt"
 #else
     #define CONFIGPATH "/home/duler/Desktop/Root/Config/config.txt"
 #endif
 
 #ifdef __arm__
     #define LOG_ROOT "/home/pi/Root/Logs/"
+#elif JERNEJ
+    #define ROOT "/home/jernej/Root/Logs/"
 #else
     #define LOG_ROOT "/home/duler/Desktop/Root/Logs/"
 #endif

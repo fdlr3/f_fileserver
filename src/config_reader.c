@@ -52,7 +52,7 @@ get_tag(char* dest, config_TAG tag){
 }
 
 int 
-authenticate(const char* _id, const char* _hash)
+authenticate_u(const char* _id, const char* _hash)
 {
     int     ID_AUTH = 1,
             PW_AUTH = 1;

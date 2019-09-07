@@ -41,4 +41,7 @@ void    listen_server   (f_server* _server);
 void    server_IO       (f_server *_fs);
 void    close_server    (f_server *_fs);
 
+int 
+authenticate_u(const char* _id, const char* _hash);
+
 #endif

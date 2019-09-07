@@ -1,10 +1,10 @@
 #declare variables
 CC=gcc
-CFLAGS=-c -Wall
+CFLAGS=-c -Wall 
 
-jernej: obj/server.o obj/logger.o obj/file_manager.o obj/main.o obj/config_reader.o
+jernej: obj/server.o obj/logger.o obj/file_manager.o obj/config_reader.o obj/main.o 
 	$(CC) -D JERNEJ obj/server.o obj/logger.o obj/file_manager.o 
-	obj/config_reader.o obj/main.o -o a.out
+	obj/config_reader.o obj/main.o  -o a.out
 
 a.out: obj/server.o obj/logger.o obj/file_manager.o obj/main.o obj/config_reader.o
 	$(CC) obj/server.o obj/logger.o obj/file_manager.o 
