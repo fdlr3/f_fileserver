@@ -41,7 +41,7 @@ typedef uint8_t BYTE;
         #define LOG_ROOT "/home/duler/Desktop/Root/Logs/"
     #endif  
 #elif DROPLET_LINUX
-    #define CONFIGPATH "/root/Root/config.txt"   
+    #define LOG_ROOT "/root/Root/config.txt"   
 #endif
 
 //send or read max packet size
