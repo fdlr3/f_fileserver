@@ -1,21 +1,21 @@
 #declare variables
 CC=gcc
-CFLAGS=-c -Wall 
+CFLAGS=-c -Wall -Werror
 
 jernej: obj/server.o obj/logger.o obj/file_manager.o obj/config_reader.o obj/main.o 
-	$(CC) -D JERNEJ_LINUX obj/server.o obj/logger.o obj/file_manager.o 
+	$(CC) -D JERNEJ_LINUX obj/server.o obj/logger.o obj/file_manager.o \
 	obj/config_reader.o obj/main.o  -o a.out
 
-droplet: obj/server.o obj/logger.o obj/file_manager.o obj/config_reader.o obj/main.o 
-	$(CC) -D DROPLET_LINUX obj/server.o obj/logger.o obj/file_manager.o 
+droplet: obj/main.o obj/server.o obj/logger.o obj/file_manager.o obj/config_reader.o  
+	$(CC) -D DROPLET_LINUX obj/server.o obj/logger.o obj/file_manager.o \ 
 	obj/config_reader.o obj/main.o  -o a.out
 
 duler: obj/server.o obj/logger.o obj/file_manager.o obj/config_reader.o obj/main.o 
-	$(CC) -D FILIP_LINUX obj/server.o obj/logger.o obj/file_manager.o 
+	$(CC) -D FILIP_LINUX obj/server.o obj/logger.o obj/file_manager.o \
 	obj/config_reader.o obj/main.o  -o a.out
 
-a.out: obj/server.o obj/logger.o obj/file_manager.o obj/main.o obj/config_reader.o
-	$(CC) obj/server.o obj/logger.o obj/file_manager.o 
+a.out: obj/main.o obj/server.o obj/logger.o obj/file_manager.o obj/config_reader.o
+	$(CC) obj/server.o obj/logger.o obj/file_manager.o \
 	obj/config_reader.o obj/main.o -o a.out
 
 obj/main.o: main.c
@@ -32,7 +32,6 @@ obj/server.o: src/server.c
 
 obj/config_reader.o: src/config_reader.c
 	$(CC) $(CFLAGS) src/config_reader.c -o obj/config_reader.o
-
 
 clean:
 	rm obj/*.o output
