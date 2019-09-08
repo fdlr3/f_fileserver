@@ -3,7 +3,15 @@ CC=gcc
 CFLAGS=-c -Wall 
 
 jernej: obj/server.o obj/logger.o obj/file_manager.o obj/config_reader.o obj/main.o 
-	$(CC) -D JERNEJ obj/server.o obj/logger.o obj/file_manager.o 
+	$(CC) -D JERNEJ_LINUX obj/server.o obj/logger.o obj/file_manager.o 
+	obj/config_reader.o obj/main.o  -o a.out
+
+jernej: obj/server.o obj/logger.o obj/file_manager.o obj/config_reader.o obj/main.o 
+	$(CC) -D DROPLET_LINUX obj/server.o obj/logger.o obj/file_manager.o 
+	obj/config_reader.o obj/main.o  -o a.out
+
+jernej: obj/server.o obj/logger.o obj/file_manager.o obj/config_reader.o obj/main.o 
+	$(CC) -D FILIP_LINUX obj/server.o obj/logger.o obj/file_manager.o 
 	obj/config_reader.o obj/main.o  -o a.out
 
 a.out: obj/server.o obj/logger.o obj/file_manager.o obj/main.o obj/config_reader.o
