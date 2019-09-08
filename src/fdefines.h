@@ -12,11 +12,11 @@ typedef uint8_t BYTE;
 #elif unix
     #ifdef JERNEJ_LINUX
         #define ROOT "/home/jernej/Root/"
-    #elif DROPLET_LINUX
-        #define ROOT "/root/Root/"
     #elif FILIP_LINUX
         #define ROOT "/home/duler/Desktop/Root/"
     #endif
+#elif DROPLET_LINUX
+    #define ROOT "/root/Root/"
 #endif
 
 //path to config file
@@ -25,11 +25,11 @@ typedef uint8_t BYTE;
 #elif unix
     #ifdef JERNEJ_LINUX
         #define CONFIGPATH "/home/jernej/Root/config.txt"
-    #elif DROPLET_LINUX
-        #define CONFIGPATH "/root/Root/config.txt"
     #elif FILIP_LINUX
         #define CONFIGPATH "/home/duler/Desktop/Root/Config/config.txt"
     #endif
+#elif DROPLET_LINUX
+    #define CONFIGPATH "/root/Root/config.txt"
 #endif
 
 #ifdef __arm__
@@ -37,11 +37,11 @@ typedef uint8_t BYTE;
 #elif unix
     #ifdef JERNEJ_LINUX
         #define LOG_ROOT "/home/jernej/Root/Logs/"
-    #elif DROPLET_LINUX
-        #define LOG_ROOT "/home/Root/Logs/"
     #elif FILIP_LINUX
         #define LOG_ROOT "/home/duler/Desktop/Root/Logs/"
-    #endif     
+    #endif  
+#elif DROPLET_LINUX
+    #define CONFIGPATH "/root/Root/config.txt"   
 #endif
 
 //send or read max packet size
