@@ -2,9 +2,20 @@
 #define _FDEFINES_INCLUDED_
 
 #include <inttypes.h>
+#include <stdio.h>
 
 //define of BYTE
 typedef uint8_t BYTE;
+
+#ifdef __arm__
+   printf("__arm__\n");
+#elif JERNEJ_LINUX
+    printf("JERNEJ_LINUX\n");
+#elif DROPLET_LINUX
+    printf("DROPLET_LINUX\n");
+#elif FILIP_LINUX
+    printf("FILIP_LINUX\n");
+#endif
 
 //path to root
 #ifdef __arm__
