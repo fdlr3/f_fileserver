@@ -8,13 +8,13 @@
 typedef uint8_t BYTE;
 
 #ifdef __arm__
-    puts("__arm__\n");
+    #error "__arm__\n"
 #elif JERNEJ_LINUX
-    puts("JERNEJ_LINUX\n");
+    #error "JERNEJ_LINUX\n"
 #elif DROPLET_LINUX
-    puts("DROPLET_LINUX\n");
+    #error "DROPLET_LINUX\n"
 #elif FILIP_LINUX
-    puts("FILIP_LINUX\n");
+    #error "FILIP_LINUX\n"
 #endif
 
 //path to root
