@@ -7,16 +7,6 @@
 //define of BYTE
 typedef uint8_t BYTE;
 
-#ifdef __arm__
-    #error "__arm__\n"
-#elif JERNEJ_LINUX
-    #error "JERNEJ_LINUX\n"
-#elif DROPLET_LINUX
-    #error "DROPLET_LINUX\n"
-#elif FILIP_LINUX
-    #error "FILIP_LINUX\n"
-#endif
-
 //path to root
 #ifdef __arm__
     #define ROOT "/home/pi/Root/"
