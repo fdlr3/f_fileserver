@@ -34,7 +34,7 @@ typedef uint8_t BYTE;
 #elif JERNEJ_LINUX
     #define LOG_ROOT "/home/jernej/Root/Logs/"
 #elif DROPLET_LINUX
-    #define LOG_ROOT "/home/Root/Logs/"
+    #define LOG_ROOT "/root/Root/Logs/"
 #elif FILIP_LINUX
     #define LOG_ROOT "/home/duler/Desktop/Root/Logs/"
 #endif
