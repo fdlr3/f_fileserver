@@ -25,6 +25,10 @@ void start_logger(){
 void Log(const char* format, ...){
     //open file
     __log.logfp = fopen(__log.directory, "a");
+    if(__log.logfp == NULL){
+        puts("ERROR opening log file.");
+        return;
+    }
     
 
     struct tm*  info;

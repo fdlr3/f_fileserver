@@ -1,6 +1,7 @@
 #include <stdio.h>
 #include <stdlib.h>
 #include <string.h>
+#include "src/fdefines.h"
 #include "src/file_manager.h"
 #include "src/server.h"
 #include "src/logger.h"
@@ -8,7 +9,7 @@
 
 int main(){
     //setup logger
-    start_logger();
+    //start_logger();
     f_server server;
     start_server(PORT_N, &server);
 

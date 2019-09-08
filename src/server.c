@@ -461,8 +461,6 @@ f_dir(f_client* _fc, Instruction* _ins)
     return 0;
 }
 
-
-
 static int     
 f_auth(f_client* _fc, Instruction* _ins)
 {
