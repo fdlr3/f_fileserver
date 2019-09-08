@@ -21,6 +21,11 @@ void start_logger(){
     strftime(__log.directory + strlen(LOG_ROOT), 100, "LOG%d-%b-%Y--%I:%M", info);    
     strcat(__log.directory, ".txt");
     printf("%s\n", __log.directory);
+    FILE* fptr = fopen(__log.directory, "w");
+    if(fptr)
+        fclose(__log.directory);
+    else
+        puts("ERROR creating log file.");
 }
 
 void Log(const char* format, ...){
