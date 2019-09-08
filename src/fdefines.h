@@ -10,9 +10,11 @@ typedef uint8_t BYTE;
 #ifdef __arm__
     #define ROOT "/home/pi/Root/"
 #elif unix
-    #ifdef JERNEJ
+    #ifdef JERNEJ_LINUX
         #define ROOT "/home/jernej/Root/"
-    #else
+    #elif DROPLET_LINUX
+        #define ROOT "/root/Root/"
+    #elif FILIP_LINUX
         #define ROOT "/home/duler/Desktop/Root/"
     #endif
 #endif
@@ -21,9 +23,11 @@ typedef uint8_t BYTE;
 #ifdef __arm__
     #define CONFIGPATH "/home/pi/Documents/Root/Config/config.txt"
 #elif unix
-    #ifdef JERNEJ
+    #ifdef JERNEJ_LINUX
         #define CONFIGPATH "/home/jernej/Root/config.txt"
-    #else
+    #elif DROPLET_LINUX
+        #define CONFIGPATH "/root/Root/config.txt"
+    #elif FILIP_LINUX
         #define CONFIGPATH "/home/duler/Desktop/Root/Config/config.txt"
     #endif
 #endif
@@ -31,9 +35,11 @@ typedef uint8_t BYTE;
 #ifdef __arm__
     #define LOG_ROOT "/home/pi/Root/Logs/"
 #elif unix
-    #ifdef JERNEJ
+    #ifdef JERNEJ_LINUX
         #define LOG_ROOT "/home/jernej/Root/Logs/"
-    #else
+    #elif DROPLET_LINUX
+        #define LOG_ROOT "/home/Root/Logs/"
+    #elif FILIP_LINUX
         #define LOG_ROOT "/home/duler/Desktop/Root/Logs/"
     #endif     
 #endif

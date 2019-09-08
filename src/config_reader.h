@@ -18,5 +18,6 @@ typedef struct{
 extern const config_value conf_values[];
 
 char* get_tag(char* dest, config_TAG tag);
-
+int 
+auth_user(const char* _id, const char* _hash);
 #endif
