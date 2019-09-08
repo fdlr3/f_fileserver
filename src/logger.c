@@ -20,6 +20,7 @@ void start_logger(){
     strcpy(__log.directory, LOG_ROOT);
     strftime(__log.directory + strlen(LOG_ROOT), 100, "LOG%d-%b-%Y--%I:%M", info);    
     strcat(__log.directory, ".txt");
+    printf("%s\n", __log.directory);
 }
 
 void Log(const char* format, ...){

@@ -9,7 +9,7 @@
 
 int main(){
     //setup logger
-    //start_logger();
+    start_logger();
     f_server server;
     start_server(PORT_N, &server);
 
