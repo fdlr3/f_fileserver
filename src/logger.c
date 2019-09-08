@@ -23,7 +23,7 @@ void start_logger(){
     printf("%s\n", __log.directory);
     FILE* fptr = fopen(__log.directory, "w");
     if(fptr)
-        fclose(__log.directory);
+        fclose(fptr);
     else
         puts("ERROR creating log file.");
 }
