@@ -6,7 +6,7 @@ jernej: obj/server.o obj/logger.o obj/file_manager.o obj/config_reader.o obj/mai
 	$(CC) -D JERNEJ_LINUX obj/server.o obj/logger.o obj/file_manager.o \
 	obj/config_reader.o obj/main.o  -o a.out
 
-droplet: obj/main.o obj/server.o obj/logger.o obj/file_manager.o obj/config_reader.o  
+droplet: obj/server.o obj/logger.o obj/file_manager.o obj/config_reader.o obj/main.o   
 	$(CC) -D DROPLET_LINUX obj/server.o obj/logger.o obj/file_manager.o \
 	obj/config_reader.o obj/main.o  -o a.out
 
