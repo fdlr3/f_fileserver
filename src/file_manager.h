@@ -23,20 +23,8 @@ typedef enum{
     if_RMFD             = 0x0A
 } instruction_flag;
 
-typedef enum{
-    e_PATH = 0x01,
-    e_FILE = 0x02,
-    e_READ_FILE = 0x03,
-    e_FILE_SIZE = 0x04,
-    e_REMOVE_FILE = 0x05,
-    e_PATH_OVERFLOW = 0x06,
-    e_PATH_ZERO_LEN = 0x07,
-    e_FOLDER_NOT_FOUND = 0x08,
-    e_FOLDER = 0x09
-} f_errors;
 
 typedef struct{
-    bool valid;
     instruction_flag flag;
     uint8_t flag_c;
     char arg0[ARG_SIZE];
@@ -61,9 +49,11 @@ int remove_directory(char *_path);
 /*########## INSTRUCTION ##########*/
 
 //creates an instruction
-Instruction init_instruction(BYTE* _barr);
+int init_instruction(Instruction* _ins, BYTE* _barr);
 //returns the full-name of the instruction
 char* get_ins_name(instruction_flag _flag);
+//generate random 4BYTE header for login
+uint32_t rnd_key();
 
 
 
@@ -71,7 +61,6 @@ char* get_ins_name(instruction_flag _flag);
 
 //returns file size
 uint32_t file_size(FILE *_fp);
-
 
 
 #endif

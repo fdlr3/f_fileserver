@@ -21,6 +21,8 @@ typedef struct{
     uint8_t fdir_len;
     //length where root ends
     uint8_t root_end;
+    //random key
+    const BYTE key[4];
 } f_client;
 
 //SERVER STRUCT

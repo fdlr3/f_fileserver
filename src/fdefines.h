@@ -14,7 +14,7 @@ typedef uint8_t BYTE;
     #define ROOT "/home/jernej/Root/"
 #elif DROPLET_LINUX
     #define ROOT "/root/Root/"
-#elif FILIP_LINUX
+#elif FILIP_LINUX || unix
     #define ROOT "/home/duler/Desktop/Root/"
 #endif
 
@@ -25,7 +25,7 @@ typedef uint8_t BYTE;
     #define CONFIGPATH "/home/jernej/Root/config.txt"
 #elif DROPLET_LINUX
     #define CONFIGPATH "/root/Root/config.txt"
-#elif FILIP_LINUX
+#elif FILIP_LINUX || unix
     #define CONFIGPATH "/home/duler/Desktop/Root/Config/config.txt"
 #endif
 
@@ -35,7 +35,7 @@ typedef uint8_t BYTE;
     #define LOG_ROOT "/home/jernej/Root/Logs/"
 #elif DROPLET_LINUX
     #define LOG_ROOT "/root/Root/Logs/"
-#elif FILIP_LINUX
+#elif FILIP_LINUX || unix
     #define LOG_ROOT "/home/duler/Desktop/Root/Logs/"
 #endif
 
@@ -52,5 +52,9 @@ typedef uint8_t BYTE;
 //instruction size
 #define INS_SIZE        206
 
+//SUCCESS
+#define SUCCESS 0xFF
+//FAILED
+#define FAIL 0x00
 
 #endif

@@ -16,7 +16,9 @@
 
 static char*    prepare_path(char* _src, f_client *_fc, const char* _file);
 static void     clean_client(f_client *_fc);
+static int      send_resp   (f_client* _fc, uint8_t _flag);
 
+//f methods -> 1 = SUCCESS, 0 = CLIENT DISCONNECT, -1 = FAIL, -2 = DEFAULT
 static int      f_push      (f_client* _fc, Instruction* _ins);
 static int      f_get       (f_client* _fc, Instruction* _ins);
 static int      f_rm        (f_client* _fc, Instruction* _ins);
@@ -103,9 +105,10 @@ server_IO(f_server* _fs)
     Log("Started listening for incoming instructions.");
 
     f_client*   fc = &(_fs->fc);
-    Instruction ins = {0};
+    Instruction ins;
     BYTE        ins_buffer[INS_SIZE];
     int         n;
+    int         result;
     while(1){
         //read instruction
         n = read_data(fc->fd, ins_buffer, INS_SIZE);
@@ -117,71 +120,82 @@ server_IO(f_server* _fs)
             Log("Client disconnected from the server.");
             return;
         }
-        else if(n != INS_SIZE){
-            Log("Instruction size was the incorrect size of %i", n);
-        }
 
         //parse instruction
-        ins = init_instruction(ins_buffer);
-        if(!ins.valid) {
-            Log("Error in instruction.");
+        result = init_instruction(&ins, ins_buffer);
+        if(result == -1) {
+            Log("ERROR in instruction");
             continue;
-        }
-
-        //check if user is not authenticated
-        if(!(fc->auth) && ins.flag != if_AUTH) { 
-            Log("Instruction denied because user is not authenticated.");
-            continue; 
         }
 
         switch(ins.flag){
             case if_PUSH:{
-                f_push(fc, &ins);
+                result = f_push(fc, &ins);
                 break;
             }
             case if_GET:{
-                f_get(fc, &ins);
+                result = f_get(fc, &ins);
                 break;
             }
             case if_REM:{
-                f_rm(fc, &ins);
+                result = f_rm(fc, &ins);
                 break;
             }
             case if_UP:{
-                f_up(fc, &ins);
+                result = f_up(fc, &ins);
                 break;
             }
             case if_DIR:{ 
-                f_dir(fc, &ins);
+                result = f_dir(fc, &ins);
                 break;
             }
             case if_AUTH:{
-                f_auth(fc, &ins);
+                result = f_auth(fc, &ins);
                 break;
             }
             case if_GO:{
-                f_go(fc, &ins);
+                result = f_go(fc, &ins);
                 break;
             }
             case if_REV:{
-                f_rev(fc, &ins);
+                result = f_rev(fc, &ins);
                 break;
             }
             case if_PATH:{
-                f_path(fc, &ins);
+                result = f_path(fc, &ins);
                 break;
             }
             case if_MKFD: {
-                f_mkfd(fc, &ins);
+                result = f_mkfd(fc, &ins);
                 break;
             }
             case if_RMFD: {
-                f_rmfd(fc, &ins);
+                result = f_rmfd(fc, &ins);
                 break;
             }
             default:{
                 break;
             }
+        }
+
+        if(result == -1 && 
+                !(ins.flag == if_PUSH || ins.flag == if_UP || ins.flag == if_AUTH)){
+            n = send_resp(fc, FAIL);
+            if (n == 0) {
+                result = 0;
+            }
+        } else if(result == 1 && 
+                !(ins.flag == if_PUSH || ins.flag == if_UP || ins.flag == if_AUTH)){
+            n = send_resp(fc, SUCCESS);
+            if (n == 0) {
+                result = 0;
+            }
+        }
+        if(result == 0){
+            close(fc->fd);
+            clean_client(fc);
+            Log("Client disconnected from the server.");
+            return;
         }
     }
 }
@@ -194,8 +208,6 @@ close_server(f_server *_fs)
 }
 
 
-
-
 static void 
 clean_client(f_client *_fc)
 {
@@ -206,6 +218,315 @@ clean_client(f_client *_fc)
     _fc->root_end = root_len;
 }
 
+//#################################################################
+
+static int     
+f_push(f_client* _fc, Instruction* _ins)
+{
+    char    path_buff[BUFF_SIZE];
+    int     n;
+    char*   temp_ptr = NULL;
+
+    if(!_fc->auth) return -1;
+
+    temp_ptr = prepare_path(path_buff, _fc, _ins->arg0);
+    if (temp_ptr == NULL) return -1;
+
+    _ins->fptr = fopen(path_buff, "w");
+    if (_ins->fptr == NULL) return -1;
+
+    //1.Send confirmation
+    n = send_resp(_fc, SUCCESS);
+    if (n == 0) {
+        fclose(_ins->fptr);
+        return 0;
+    }
+
+
+    //2.Read file
+    n = read_file(_ins->fptr, _fc, _ins->file_size);
+    if (n == 0) {
+        fclose(_ins->fptr);
+        remove(_ins->arg0);
+        return 0;
+    }
+    else {
+        fclose(_ins->fptr);
+        return 1;
+    }
+}
+
+static int    
+f_get(f_client* _fc, Instruction* _ins)
+{
+    BYTE        size_buff[UI32_B];
+    char        path_buff[BUFF_SIZE];
+    char*       temp_ptr = NULL;
+    uint32_t    f_size;
+
+    if(!_fc->auth) return -1;
+    
+    temp_ptr = prepare_path(path_buff, _fc, _ins->arg0);
+    if (temp_ptr == NULL) return -1;
+
+    _ins->fptr = fopen(path_buff, "rb");
+    if (_ins->fptr == NULL) return -1;
+
+    f_size = file_size(_ins->fptr);
+    if(f_size == 0 || f_size > MAX_FILE_SIZE){
+        fclose(_ins->fptr);
+        return -1;
+    }
+
+    //1. Send confirmation TODO
+
+    //2. send file size
+    memcpy(size_buff, &f_size, UI32_B);
+    send_data(_fc->fd, size_buff, UI32_B);
+
+    //3. Send file
+    send_file(_ins->fptr, _fc);
+    fclose(_ins->fptr);
+
+    return 1;
+}
+
+static int     
+f_rm(f_client* _fc, Instruction* _ins)
+{
+    char    path_buff[BUFF_SIZE];
+    char*   temp_ptr = NULL;
+
+    if(!_fc->auth) return -1;
+
+    temp_ptr = prepare_path(path_buff, _fc, _ins->arg0);
+    if (temp_ptr == NULL) return -1;
+
+    if (remove(path_buff) == -1) return -1;
+    return 1;
+}
+
+static int     
+f_up(f_client* _fc, Instruction* _ins)
+{
+    char path_buffe[BUFF_SIZE];
+    char path_buffu[BUFF_SIZE];
+    char* temp_eptr = NULL;
+    char* temp_uptr = NULL;
+    int n;
+
+    if(!_fc->auth) return -1;
+
+    temp_eptr = prepare_path(path_buffe, _fc, _ins->arg0);
+    temp_uptr = prepare_path(path_buffu, _fc, _ins->arg1);
+    if (temp_eptr == NULL || temp_uptr == NULL) return -1;
+
+    //1. Remove file
+    if (remove(path_buffe) == -1) return -1;
+
+    _ins->fptr = fopen(path_buffu, "w");
+    if (_ins->fptr == NULL) return -1;
+
+    //2. Send confirmation
+    n = send_resp(_fc, SUCCESS);
+    if (n == 0) {
+        fclose(_ins->fptr);
+        return 0;
+    }
+
+    //3. Read file
+    n = read_file(_ins->fptr, _fc, _ins->file_size);
+    if (n == 0) {
+        fclose(_ins->fptr);
+        remove(_ins->arg0);
+        return 0;
+    }
+    else {
+        fclose(_ins->fptr);
+        return 1;
+    }
+}
+
+static int
+f_dir(f_client* _fc, Instruction* _ins)
+{
+    //FIXIT
+    BYTE *buffer = NULL;
+    size_t i = 0,
+           len = 0,
+           send_length = 0,
+           cur_len = 0;
+    BYTE buffer_len[UI32_B];
+
+    if(!_fc->auth) return -1;
+
+    _ins->dirptr = opendir(_fc->f_directory);
+    if (_ins->dirptr == NULL) return -1;
+
+    buffer = dir_contents(_ins);
+    if(!buffer) return -1;
+
+    //send data length
+    len = strlen((char *)buffer) + 1;
+    memcpy(buffer_len, &len, UI32_B);
+    send_data(_fc->fd, buffer_len, 4);
+
+    //send data
+    cur_len = len;
+    while (i != len) {
+        send_length = cur_len >= FILE_CHUNK ? FILE_CHUNK : cur_len;
+        if (send_length == FILE_CHUNK) {
+            cur_len -= FILE_CHUNK;
+        }
+        else {
+            cur_len = 0;
+        }
+        send_data(_fc->fd, buffer + i, send_length);
+        i += send_length;
+    }
+
+    if (buffer) {
+        free(buffer);
+    }
+    closedir(_ins->dirptr);
+    return 1;
+}
+
+static int     
+f_auth(f_client* _fc, Instruction* _ins)
+{
+    if (!(_fc->auth)) {
+        if (auth_user(_ins->arg0, _ins->arg1)) {
+            _fc->auth = true;
+            //setup key
+            uint32_t key = rnd_key();
+            memcpy(_fc->key, &key, UI32_B);
+
+            send_resp(_fc, SUCCESS);
+            Log("User %s is authenticated.", _ins->arg0);
+        } else {
+            send_resp(_fc, FAIL);
+            Log("Cannot authenticate user %s.", _ins->arg0);
+        }
+    } else {
+        send_resp(_fc, SUCCESS);
+    }
+    return 1;
+}
+
+static int     
+f_go(f_client* _fc, Instruction* _ins)
+{
+    char            buffer[BUFF_SIZE];
+    size_t          dir_len = strlen(_ins->arg0);
+    const char*     slash   = "/\0";
+    size_t          len     = 0;
+    int             valid;
+
+    if(!_fc->auth) return -1;
+
+    //check if size wont reach higher of 255 or dir length is 0
+    if((dir_len + _fc->fdir_len + 2 > BUFF_SIZE) || dir_len == 0) return -1;
+
+    //prepare new path to buffer
+    memcpy(buffer, _fc->f_directory, _fc->fdir_len);
+    len = _fc->fdir_len;
+    memcpy(buffer + len, _ins->arg0, dir_len);
+    len += dir_len;
+    memcpy(buffer + len, slash, 2);
+    len += 1;
+
+    //check if dir is valid
+    valid = dir_valid(buffer);
+    if(valid == 1) {
+        memcpy(_fc->f_directory, buffer, len+1);
+        _fc->fdir_len = len;
+        return 1;
+    } else return -1;
+}
+
+static int     
+f_rev(f_client* _fc, Instruction* _ins)
+{
+    char buffer[BUFF_SIZE];
+    size_t dir_len      = _fc->fdir_len;
+    int counter         = 0;
+    int valid;
+    int buffer_len;
+
+    if(!_fc->auth) return -1;
+
+    //if current directory is root dont go back
+    if(_fc->fdir_len == _fc->root_end) return -1;
+
+    //go one directory back
+    memcpy(buffer, _fc->f_directory, dir_len + 1);
+    for(int i = dir_len; i >= _fc->root_end - 1; i--){
+        if(buffer[i] == '/') {
+            if(counter == 1){
+                buffer[i + 1] = '\0';
+                break;
+            }
+            counter++;
+        }
+    }
+
+    //check if new buffer is valid
+    valid = dir_valid(buffer);
+    if(valid == 1) {
+        buffer_len = strlen(buffer);
+        memcpy(_fc->f_directory, buffer, buffer_len + 1);
+        _fc->fdir_len = buffer_len;
+
+        return 1;
+    } else return -1;
+}
+
+static int     
+f_path(f_client* _fc, Instruction* _ins)
+{
+    BYTE size_buff[UI32_B];
+    uint32_t size = (_fc->fdir_len) + 1;
+
+    if(!_fc->auth) return -1;
+
+    memcpy(size_buff, &(size), UI32_B);
+    send_data(_fc->fd, size_buff, UI32_B);
+    send_data(_fc->fd, (BYTE *)_fc->f_directory, _fc->fdir_len);
+
+    return 1;
+}
+
+static int     
+f_mkfd(f_client* _fc, Instruction* _ins)
+{
+    char buffer[BUFF_SIZE];
+
+    if(!_fc->auth) return -1;
+
+    if(prepare_path(buffer, _fc, _ins->arg0) == NULL) return -1;
+    int result = mkdir(buffer, 0700);
+    if(result == -1) return -1;
+
+    return 1;
+}
+
+static int     
+f_rmfd(f_client* _fc, Instruction* _ins)
+{
+    char buffer[BUFF_SIZE];
+
+    if(!_fc->auth) return -1;
+
+    if(prepare_path(buffer, _fc, _ins->arg0) == NULL) return -1; 
+    int result = remove_directory(buffer);
+    if(result == -1) return -1;
+
+    return 1;
+}
+
+
+//#######################HELEPRS############################
 
 static int 
 send_file(FILE *_fp, f_client* _fc)
@@ -293,318 +614,15 @@ prepare_path(char* _src, f_client *_fc, const char* _file)
     return _src;
 }
 
-
-//#################################################################
-
-static int     
-f_push(f_client* _fc, Instruction* _ins)
-{
-    char    path_buff[BUFF_SIZE];
-    int     n;
-    char    *temp_ptr = NULL;
-
-    temp_ptr = prepare_path(path_buff, _fc, _ins->arg0);
-    if (temp_ptr == NULL) {
-        return e_PATH;
-    }
-
-    _ins->fptr = fopen(path_buff, "w");
-    if (_ins->fptr == NULL) {
-        return e_FILE;
-    }
-
-    n = read_file(_ins->fptr, _fc, _ins->file_size);
-    if (n == 0) {
-        fclose(_ins->fptr);
-        remove(_ins->arg0);
-        return e_READ_FILE;
-    }
-    else {
-        fclose(_ins->fptr);
-        return 0;
-    }
-}
-
-static int    
-f_get(f_client* _fc, Instruction* _ins)
-{
-    BYTE        size_buff[UI32_B];
-    char        path_buff[BUFF_SIZE];
-    char*       temp_ptr = NULL;
-    uint32_t    f_size;
-    
-    temp_ptr = prepare_path(path_buff, _fc, _ins->arg0);
-    if (temp_ptr == NULL) {
-        return e_PATH;
-    }
-
-    _ins->fptr = fopen(path_buff, "rb");
-    if (_ins->fptr == NULL) {
-        return e_FILE;
-    }
-
-    //1. Send file size
-    f_size = file_size(_ins->fptr);
-    if(f_size == 0){
-        fclose(_ins->fptr);
-        return e_FILE_SIZE;
-    }
-    memset(size_buff, 0, UI32_B);
-    memcpy(size_buff, &f_size, UI32_B);
-    send_data(_fc->fd, size_buff, UI32_B);
-
-    //2. Send actual file
-    send_file(_ins->fptr, _fc);
-    fclose(_ins->fptr);
-
-    return 0;
-}
-
-static int     
-f_rm(f_client* _fc, Instruction* _ins)
-{
-    char    path_buff[BUFF_SIZE];
-    char*   temp_ptr = NULL;
-
-    temp_ptr = prepare_path(path_buff, _fc, _ins->arg0);
-    if (temp_ptr == NULL) {
-        return e_PATH;
-    }
-
-    if (remove(path_buff) == -1) {
-        return e_REMOVE_FILE;
-    }
-    return 0;
-}
-
-static int     
-f_up(f_client* _fc, Instruction* _ins)
-{
-    char path_buffe[BUFF_SIZE];
-    char path_buffu[BUFF_SIZE];
-    char* temp_eptr = NULL;
-    char* temp_uptr = NULL;
-
-    temp_eptr = prepare_path(path_buffe, _fc, _ins->arg0);
-    temp_uptr = prepare_path(path_buffu, _fc, _ins->arg1);
-
-    if (temp_eptr == NULL || temp_uptr == NULL) {
-        return e_PATH;
-    }
-
-    if (remove(path_buffe) == -1) {
-        return e_REMOVE_FILE;
-    }
-
-    _ins->fptr = fopen(path_buffu, "w");
-    if (_ins->fptr == NULL) {
-        return e_FILE;
-    }
-
-    if (read_file(_ins->fptr, _fc, _ins->file_size) == 0) {
-        fclose(_ins->fptr);
-        remove(path_buffu);
-        return e_READ_FILE;
-    }
-    fclose(_ins->fptr);
-
-    return 0;
-}
-
 static int
-f_dir(f_client* _fc, Instruction* _ins)
+send_resp (f_client* _fc, uint8_t _flag)
 {
-    //FIXIT
-    BYTE *buffer = NULL;
-    size_t i = 0,
-           len = 0,
-           send_length = 0,
-           cur_len = 0;
-    BYTE buffer_len[UI32_B];
-    memset(buffer_len, 0, 4);
+    BYTE response[5];
+    int n;
 
-    _ins->dirptr = opendir(_fc->f_directory);
-    if (_ins->dirptr == NULL)
-    {
-        Log("Running instruction %s failed to open directory",
-            get_ins_name(_ins->flag));
-        return 1;
-    }
+    memcpy(response, _fc->key, UI32_B);
+    response[4] = _flag;
+    n = send_data(_fc->fd, response, 5);
 
-    buffer = dir_contents(_ins);
-    len = strlen((char *)buffer) + 1;
-    cur_len = len;
-    //send data length
-    memcpy(buffer_len, &len, UI32_B);
-    send_data(_fc->fd, buffer_len, 4);
-    //send data
-    while (i != len)
-    {
-        send_length = cur_len >= FILE_CHUNK ? FILE_CHUNK : cur_len;
-        if (send_length == FILE_CHUNK)
-        {
-            cur_len -= FILE_CHUNK;
-        }
-        else
-        {
-            cur_len = 0;
-        }
-        send_data(_fc->fd, buffer + i, send_length);
-        i += send_length;
-    }
-
-    if (buffer)
-    {
-        free(buffer);
-    }
-    closedir(_ins->dirptr);
-    return 0;
+    return n;
 }
-
-static int     
-f_auth(f_client* _fc, Instruction* _ins)
-{
-    //FIXIT
-    BYTE buffer[5] = {0x7F, 0x3E, 0x24, 0x55};
-    BYTE logged_in_flag = 0xFF;
-    BYTE logged_out_flag = 0x00;
-
-    if (!(_fc->auth))
-    {
-        if (auth_user(_ins->arg0, _ins->arg1))
-        {
-            _fc->auth = true;
-            buffer[4] = logged_in_flag;
-            Log("User %s is authenticated.", _ins->arg0);
-        }
-        else
-        {
-            buffer[4] = logged_out_flag;
-            Log("Cannot authenticate user %s.", _ins->arg0);
-        }
-    }
-    else
-    {
-        buffer[4] = logged_in_flag;
-    }
-    send_data(_fc->fd, buffer, 5);
-    return 0;
-}
-
-static int     
-f_go(f_client* _fc, Instruction* _ins)
-{
-    char            buffer[BUFF_SIZE];
-    size_t          dir_len = strlen(_ins->arg0);
-    const char*     slash   = "/\0";
-    size_t          len     = 0;
-    int             valid;
-
-    //check if size wont reach higher of 255 or dir length is 0
-    if(dir_len == 0) {
-        return e_PATH_ZERO_LEN;
-    }
-    if(dir_len + _fc->fdir_len + 2 > BUFF_SIZE) {
-        return e_PATH_OVERFLOW;
-    }
-
-    //prepare new path to buffer
-    memcpy(buffer, _fc->f_directory, _fc->fdir_len);
-    len = _fc->fdir_len;
-    memcpy(buffer + len, _ins->arg0, dir_len);
-    len += dir_len;
-    memcpy(buffer + len, slash, 2);
-    len += 1;
-
-    //check if dir is valid
-    valid = dir_valid(buffer);
-    if(valid == 1) {
-        memcpy(_fc->f_directory, buffer, len+1);
-        _fc->fdir_len = len;
-
-        return 0;
-    } else {
-        return e_FOLDER_NOT_FOUND;
-    }
-}
-
-static int     
-f_rev(f_client* _fc, Instruction* _ins)
-{
-    char buffer[BUFF_SIZE];
-    size_t dir_len      = _fc->fdir_len;
-    int counter         = 0;
-    int valid;
-    int buffer_len;
-
-    //if current directory is root dont go back
-    if(_fc->fdir_len == _fc->root_end){
-        return e_FOLDER;
-    }
-
-    //go one directory back
-    memcpy(buffer, _fc->f_directory, dir_len + 1);
-    for(int i = dir_len; i >= _fc->root_end - 1; i--){
-        if(buffer[i] == '/') {
-            if(counter == 1){
-                buffer[i + 1] = '\0';
-                break;
-            }
-            counter++;
-        }
-    }
-
-    //check if new buffer is valid
-    valid = dir_valid(buffer);
-    if(valid == 1) {
-        buffer_len = strlen(buffer);
-        memcpy(_fc->f_directory, buffer, buffer_len + 1);
-        _fc->fdir_len = buffer_len;
-
-        return 0;
-    } else {
-        return e_FOLDER_NOT_FOUND;
-    }
-}
-
-static int     
-f_path(f_client* _fc, Instruction* _ins)
-{
-    BYTE size_buff[UI32_B];
-    uint32_t size = (_fc->fdir_len) + 1;
-
-    memcpy(size_buff, &(size), UI32_B);
-    send_data(_fc->fd, size_buff, UI32_B);
-    send_data(_fc->fd, (BYTE *)_fc->f_directory, _fc->fdir_len);
-
-    return 0;
-}
-
-static int     
-f_mkfd(f_client* _fc, Instruction* _ins)
-{
-    char buffer[BUFF_SIZE];
-
-    if(prepare_path(buffer, _fc, _ins->arg0) == NULL){
-        return e_PATH;
-    }
-    int result = mkdir(buffer, 0700);
-
-    //FIXIT
-    return result;
-}
-
-static int     
-f_rmfd(f_client* _fc, Instruction* _ins)
-{
-    char buffer[BUFF_SIZE];
-
-    if(prepare_path(buffer, _fc, _ins->arg0) == NULL){
-        return e_PATH;
-    }
-    int result = remove_directory(buffer);
-
-    //FIXIT
-    return result;
-}
-
