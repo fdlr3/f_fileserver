@@ -4,20 +4,7 @@
 #include "fdefines.h"
 #include <stdio.h>
 
-typedef enum{
-    ID_TAG = 1 << 0,
-    PW_TAG = 1 << 1,
-    SZ_TAG = 1 << 2
-} config_TAG;
+char*   get_tag     (const char* _conf_path, char* _dest, const char* _tag);
+int     auth_user   (const char* _id, const char* _hash);
 
-typedef struct{
-    config_TAG tag;
-    char* value;
-} config_value;
-
-extern const config_value conf_values[];
-
-char* get_tag(char* dest, config_TAG tag);
-int 
-auth_user(const char* _id, const char* _hash);
 #endif

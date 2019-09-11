@@ -36,9 +36,17 @@ typedef struct {
     //port number
     int16_t port_num;
     
+    //root path
+    const char root_path[BUFF_SIZE];
+    //logs path
+    const char logs_path[BUFF_SIZE];
+    //config path
+    const char config_path[BUFF_SIZE];
+    
 } f_server;
 
-void    start_server    (int16_t _port, f_server* _server);
+void    start_server    (f_server* _server, const char* _port, 
+                        const char* _hostname, const char* _conf_path);
 void    listen_server   (f_server* _server);
 void    server_IO       (f_server *_fs);
 void    close_server    (f_server *_fs);

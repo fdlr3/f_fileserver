@@ -13,6 +13,7 @@
 #include <unistd.h>
 #include <sys/types.h>
 #include <sys/stat.h>
+#include <netdb.h>
 
 static char*    prepare_path(char* _src, f_client *_fc, const char* _file);
 static void     clean_client(f_client *_fc);
@@ -40,22 +41,39 @@ static int      read_file   (FILE *_fp, f_client* _fc, size_t _size);
 
 
 void 
-start_server(int16_t _port, f_server* _server)
+start_server (f_server* _server, const char* _port, 
+             const char* _hostname, const char* _conf_path)
 {
+    char* pt;
+    struct in_addr addr;
+    int portn;
+    struct hostent* he;
+
     memset(_server, 0, sizeof(f_server));
     _server->fc.auth = false;
-    _server->port_num = _port;
     clean_client(&(_server->fc));
+    //set config path
+    strncpy(_server->config_path, _conf_path, BUFF_SIZE);
+    //get port
+    portn = atoi(_port);
+    _server->port_num = _port;
+    //set hostname
+    if ((he = gethostbyname(_hostname) ) == NULL ) {
+        puts("Error in hostname. Exiting..");
+        exit(EXIT_FAILURE);
+    }
+    //get root and logs folder path
+    get_tag(_server->config_path, _server->logs_path, "LogPath");
+    get_tag(_server->config_path,_server->root_path, "RootPath");
 
     //setup server struct
     struct sockaddr_in* sd = &(_server->server_addr);
     sd->sin_family = AF_INET;
-    sd->sin_addr.s_addr = INADDR_ANY;
-    sd->sin_port = htons(_port);
+    memcpy(&(_server->server_addr.sin_addr), he->h_addr_list[0], he->h_length);
+    sd->sin_port = htons(portn);
+
 
     //opens a new socket 
-    //if return is -1 it failed
-    //else it returns the file descriptor
     int* s_fd = &(_server->server_fd);
     *s_fd = socket(AF_INET, SOCK_STREAM, 0);
     if(*s_fd < 0){
