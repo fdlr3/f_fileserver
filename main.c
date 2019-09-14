@@ -12,8 +12,6 @@ int main(int argc, char **argv){
         puts("Error in argument count. Exiting");
         exit(EXIT_SUCCESS);
     }
-    //setup logger
-    start_logger();
     f_server server;
     start_server(&server, argv[1], argv[2], argv[3]);
 

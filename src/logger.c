@@ -11,14 +11,14 @@ struct Logger{
 
 static struct Logger __log;
 
-void start_logger(){    
+void start_logger(const char* _log_path){    
     struct tm* info;
 
     time(&(__log.start_time));
     info = localtime(&(__log.start_time));
 
-    strcpy(__log.directory, LOG_ROOT);
-    strftime(__log.directory + strlen(LOG_ROOT), 100, "LOG%d-%b-%Y--%I:%M", info);    
+    strcpy(__log.directory, _log_path);
+    strftime(__log.directory + strlen(_log_path), 100, "LOG%d-%b-%Y--%I:%M", info);    
     strcat(__log.directory, ".txt");
 }
 

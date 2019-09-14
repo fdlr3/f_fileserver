@@ -127,6 +127,15 @@ init_instruction(Instruction* _ins, BYTE* _barr)
         strcpy(_ins->arg1, (char*)(_barr+106));
     }
 
+    printf( "Instruction recieved.. \n"
+            "Flag: %s\n"
+            "Argument count %d\n"
+            "File size: %d\n"
+            "Arg0: %s"
+            "Arg1: %s",
+            get_ins_name(_ins->flag), _ins->flag_c, 
+            _ins->file_size, _ins->arg0, _ins->arg1);
+
     return 1;
 }
 
@@ -144,6 +153,8 @@ get_ins_name(instruction_flag _flag)
         case if_GO:             return "GO";
         case if_REV:            return "REV";
         case if_PATH:           return "PATH";
+        case if_MKFD:           return "CREATE FOLDER";
+        case if_RMFD:           return "REMOVE FOLDER";
         default:                return "ERROR";
     }
 }

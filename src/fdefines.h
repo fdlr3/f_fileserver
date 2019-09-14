@@ -7,38 +7,6 @@
 //define of BYTE
 typedef uint8_t BYTE;
 
-//path to root
-#ifdef __arm__
-    #define ROOT "/home/pi/Root/"
-#elif JERNEJ_LINUX
-    #define ROOT "/home/jernej/Root/"
-#elif DROPLET_LINUX
-    #define ROOT "/root/Root/"
-#elif FILIP_LINUX || unix
-    #define ROOT "/home/duler/Desktop/Root/"
-#endif
-
-//path to config file
-#ifdef __arm__
-    #define CONFIGPATH "/home/pi/Documents/Root/Config/config.txt"
-#elif JERNEJ_LINUX
-    #define CONFIGPATH "/home/jernej/Root/config.txt"
-#elif DROPLET_LINUX
-    #define CONFIGPATH "/root/Root/config.txt"
-#elif FILIP_LINUX || unix
-    #define CONFIGPATH "/home/duler/Desktop/Root/Config/config.txt"
-#endif
-
-#ifdef __arm__
-    #define LOG_ROOT "/home/pi/Root/Logs/"
-#elif JERNEJ_LINUX
-    #define LOG_ROOT "/home/jernej/Root/Logs/"
-#elif DROPLET_LINUX
-    #define LOG_ROOT "/root/Root/Logs/"
-#elif FILIP_LINUX || unix
-    #define LOG_ROOT "/home/duler/Desktop/Root/Logs/"
-#endif
-
 //send or read max packet size
 #define FILE_CHUNK      1024
 //max file size 
@@ -56,5 +24,11 @@ typedef uint8_t BYTE;
 #define SUCCESS 0xFF
 //FAILED
 #define FAIL 0x00
+
+//config file defines
+#define ID_TAG          "ID"
+#define PW_TAG          "PW"
+#define ROOTPATH_TAG    "RootPath"
+#define LogPATH_TAG     "LogPath"
 
 #endif

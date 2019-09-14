@@ -22,7 +22,7 @@ typedef struct{
     //length where root ends
     uint8_t root_end;
     //random key
-    const BYTE key[4];
+    BYTE key[4];
 } f_client;
 
 //SERVER STRUCT
@@ -37,11 +37,11 @@ typedef struct {
     int16_t port_num;
     
     //root path
-    const char root_path[BUFF_SIZE];
+    char root_path[BUFF_SIZE];
     //logs path
-    const char logs_path[BUFF_SIZE];
+    char logs_path[BUFF_SIZE];
     //config path
-    const char config_path[BUFF_SIZE];
+    char config_path[BUFF_SIZE];
     
 } f_server;
 

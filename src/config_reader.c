@@ -6,7 +6,6 @@
 char* 
 get_tag(const char* _conf_path, char* _dest, const char* _tag){
     FILE*       fp          = fopen(_conf_path, "r");
-    char        buffer[BUFF_SIZE];
     char *      line        = NULL;
     size_t      len         = 0;
     ssize_t     read;
@@ -47,16 +46,16 @@ get_tag(const char* _conf_path, char* _dest, const char* _tag){
 }
 
 int 
-auth_user(const char* _id, const char* _hash)
+auth_user(const char* _conf_path, const char* _id, const char* _hash)
 {
     int     ID_AUTH = 1,
             PW_AUTH = 1;
     char    buffer[256] = {0};
     
-    //get_tag(buffer, ID_TAG);
-    //ID_AUTH = strcmp(buffer, _id);
-    //get_tag(buffer, PW_TAG);
-    //PW_AUTH = strcmp(buffer, _hash);
+    get_tag(_conf_path, buffer, ID_TAG);
+    ID_AUTH = strcmp(buffer, _id);
+    get_tag(_conf_path, buffer, PW_TAG);
+    PW_AUTH = strcmp(buffer, _hash);
     
     return ID_AUTH && PW_AUTH;
 }

@@ -16,21 +16,21 @@
 #include <netdb.h>
 
 static char*    prepare_path(char* _src, f_client *_fc, const char* _file);
-static void     clean_client(f_client *_fc);
+static void     clean_client(f_server *_fs);
 static int      send_resp   (f_client* _fc, uint8_t _flag);
 
-//f methods -> 1 = SUCCESS, 0 = CLIENT DISCONNECT, -1 = FAIL, -2 = DEFAULT
-static int      f_push      (f_client* _fc, Instruction* _ins);
-static int      f_get       (f_client* _fc, Instruction* _ins);
-static int      f_rm        (f_client* _fc, Instruction* _ins);
-static int      f_up        (f_client* _fc, Instruction* _ins);
-static int      f_dir       (f_client* _fc, Instruction* _ins);
-static int      f_auth      (f_client* _fc, Instruction* _ins);
-static int      f_go        (f_client* _fc, Instruction* _ins);
-static int      f_rev       (f_client* _fc, Instruction* _ins);
-static int      f_path      (f_client* _fc, Instruction* _ins);
-static int      f_mkfd      (f_client* _fc, Instruction* _ins);
-static int      f_rmfd      (f_client* _fc, Instruction* _ins);
+//f methods -> 1 = SUCCESS, 0 = CLIENT DISCONNECT, -1 = FAIL
+static int      f_push      (f_server* _fs, Instruction* _ins);
+static int      f_get       (f_server* _fs, Instruction* _ins);
+static int      f_rm        (f_server* _fs, Instruction* _ins);
+static int      f_up        (f_server* _fs, Instruction* _ins);
+static int      f_dir       (f_server* _fs, Instruction* _ins);
+static int      f_auth      (f_server* _fs, Instruction* _ins);
+static int      f_go        (f_server* _fs, Instruction* _ins);
+static int      f_rev       (f_server* _fs, Instruction* _ins);
+static int      f_path      (f_server* _fs, Instruction* _ins);
+static int      f_mkfd      (f_server* _fs, Instruction* _ins);
+static int      f_rmfd      (f_server* _fs, Instruction* _ins);
 
 static int      send_data   (int _fd, BYTE* _buffer, size_t _n);
 static int      read_data   (int _fd, BYTE* _buffer, size_t _n);
@@ -44,19 +44,17 @@ void
 start_server (f_server* _server, const char* _port, 
              const char* _hostname, const char* _conf_path)
 {
-    char* pt;
-    struct in_addr addr;
-    int portn;
     struct hostent* he;
 
     memset(_server, 0, sizeof(f_server));
     _server->fc.auth = false;
-    clean_client(&(_server->fc));
+    clean_client(_server);
     //set config path
     strncpy(_server->config_path, _conf_path, BUFF_SIZE);
+    //start logger
+    start_logger(_server->config_path);
     //get port
-    portn = atoi(_port);
-    _server->port_num = _port;
+    _server->port_num = atoi(_port);
     //set hostname
     if ((he = gethostbyname(_hostname) ) == NULL ) {
         puts("Error in hostname. Exiting..");
@@ -70,7 +68,7 @@ start_server (f_server* _server, const char* _port,
     struct sockaddr_in* sd = &(_server->server_addr);
     sd->sin_family = AF_INET;
     memcpy(&(_server->server_addr.sin_addr), he->h_addr_list[0], he->h_length);
-    sd->sin_port = htons(portn);
+    sd->sin_port = htons(_server->port_num);
 
 
     //opens a new socket 
@@ -134,7 +132,7 @@ server_IO(f_server* _fs)
         //check in recieved instruction
         if(n == 0){
             close(fc->fd);
-            clean_client(fc);
+            clean_client(_fs);
             Log("Client disconnected from the server.");
             return;
         }
@@ -148,47 +146,47 @@ server_IO(f_server* _fs)
 
         switch(ins.flag){
             case if_PUSH:{
-                result = f_push(fc, &ins);
+                result = f_push(_fs, &ins);
                 break;
             }
             case if_GET:{
-                result = f_get(fc, &ins);
+                result = f_get(_fs, &ins);
                 break;
             }
             case if_REM:{
-                result = f_rm(fc, &ins);
+                result = f_rm(_fs, &ins);
                 break;
             }
             case if_UP:{
-                result = f_up(fc, &ins);
+                result = f_up(_fs, &ins);
                 break;
             }
             case if_DIR:{ 
-                result = f_dir(fc, &ins);
+                result = f_dir(_fs, &ins);
                 break;
             }
             case if_AUTH:{
-                result = f_auth(fc, &ins);
+                result = f_auth(_fs, &ins);
                 break;
             }
             case if_GO:{
-                result = f_go(fc, &ins);
+                result = f_go(_fs, &ins);
                 break;
             }
             case if_REV:{
-                result = f_rev(fc, &ins);
+                result = f_rev(_fs, &ins);
                 break;
             }
             case if_PATH:{
-                result = f_path(fc, &ins);
+                result = f_path(_fs, &ins);
                 break;
             }
             case if_MKFD: {
-                result = f_mkfd(fc, &ins);
+                result = f_mkfd(_fs, &ins);
                 break;
             }
             case if_RMFD: {
-                result = f_rmfd(fc, &ins);
+                result = f_rmfd(_fs, &ins);
                 break;
             }
             default:{
@@ -211,7 +209,7 @@ server_IO(f_server* _fs)
         }
         if(result == 0){
             close(fc->fd);
-            clean_client(fc);
+            clean_client(_fs);
             Log("Client disconnected from the server.");
             return;
         }
@@ -227,11 +225,12 @@ close_server(f_server *_fs)
 
 
 static void 
-clean_client(f_client *_fc)
+clean_client(f_server *_fs)
 {
+    f_client* _fc = &(_fs->fc);
     memset(_fc, 0, sizeof(f_client));
-    size_t root_len = strlen(ROOT);
-    strcpy(_fc->f_directory, ROOT);
+    size_t root_len = strlen(_fs->root_path);
+    strcpy(_fc->f_directory, _fs->root_path);
     _fc->fdir_len = root_len;
     _fc->root_end = root_len;
 }
@@ -239,8 +238,9 @@ clean_client(f_client *_fc)
 //#################################################################
 
 static int     
-f_push(f_client* _fc, Instruction* _ins)
+f_push(f_server* _fs, Instruction* _ins)
 {
+    f_client* _fc = &(_fs->fc);
     char    path_buff[BUFF_SIZE];
     int     n;
     char*   temp_ptr = NULL;
@@ -275,8 +275,9 @@ f_push(f_client* _fc, Instruction* _ins)
 }
 
 static int    
-f_get(f_client* _fc, Instruction* _ins)
+f_get(f_server* _fs, Instruction* _ins)
 {
+    f_client* _fc = &(_fs->fc);
     BYTE        size_buff[UI32_B];
     char        path_buff[BUFF_SIZE];
     char*       temp_ptr = NULL;
@@ -310,8 +311,9 @@ f_get(f_client* _fc, Instruction* _ins)
 }
 
 static int     
-f_rm(f_client* _fc, Instruction* _ins)
+f_rm(f_server* _fs, Instruction* _ins)
 {
+    f_client* _fc = &(_fs->fc);
     char    path_buff[BUFF_SIZE];
     char*   temp_ptr = NULL;
 
@@ -325,8 +327,9 @@ f_rm(f_client* _fc, Instruction* _ins)
 }
 
 static int     
-f_up(f_client* _fc, Instruction* _ins)
+f_up(f_server* _fs, Instruction* _ins)
 {
+    f_client* _fc = &(_fs->fc);
     char path_buffe[BUFF_SIZE];
     char path_buffu[BUFF_SIZE];
     char* temp_eptr = NULL;
@@ -366,9 +369,9 @@ f_up(f_client* _fc, Instruction* _ins)
 }
 
 static int
-f_dir(f_client* _fc, Instruction* _ins)
+f_dir(f_server* _fs, Instruction* _ins)
 {
-    //FIXIT
+    f_client* _fc = &(_fs->fc);
     BYTE *buffer = NULL;
     size_t i = 0,
            len = 0,
@@ -411,10 +414,11 @@ f_dir(f_client* _fc, Instruction* _ins)
 }
 
 static int     
-f_auth(f_client* _fc, Instruction* _ins)
+f_auth(f_server* _fs, Instruction* _ins)
 {
+    f_client* _fc = &(_fs->fc);
     if (!(_fc->auth)) {
-        if (auth_user(_ins->arg0, _ins->arg1)) {
+        if (auth_user(_fs->config_path, _ins->arg0, _ins->arg1)) {
             _fc->auth = true;
             //setup key
             uint32_t key = rnd_key();
@@ -433,8 +437,9 @@ f_auth(f_client* _fc, Instruction* _ins)
 }
 
 static int     
-f_go(f_client* _fc, Instruction* _ins)
+f_go(f_server* _fs, Instruction* _ins)
 {
+    f_client* _fc = &(_fs->fc);
     char            buffer[BUFF_SIZE];
     size_t          dir_len = strlen(_ins->arg0);
     const char*     slash   = "/\0";
@@ -464,8 +469,9 @@ f_go(f_client* _fc, Instruction* _ins)
 }
 
 static int     
-f_rev(f_client* _fc, Instruction* _ins)
+f_rev(f_server* _fs, Instruction* _ins)
 {
+    f_client* _fc = &(_fs->fc);
     char buffer[BUFF_SIZE];
     size_t dir_len      = _fc->fdir_len;
     int counter         = 0;
@@ -501,8 +507,9 @@ f_rev(f_client* _fc, Instruction* _ins)
 }
 
 static int     
-f_path(f_client* _fc, Instruction* _ins)
+f_path(f_server* _fs, Instruction* _ins)
 {
+    f_client* _fc = &(_fs->fc);
     BYTE size_buff[UI32_B];
     uint32_t size = (_fc->fdir_len) + 1;
 
@@ -510,14 +517,15 @@ f_path(f_client* _fc, Instruction* _ins)
 
     memcpy(size_buff, &(size), UI32_B);
     send_data(_fc->fd, size_buff, UI32_B);
-    send_data(_fc->fd, (BYTE *)_fc->f_directory, _fc->fdir_len);
+    send_data(_fc->fd, (BYTE *)_fc->f_directory, size);
 
     return 1;
 }
 
 static int     
-f_mkfd(f_client* _fc, Instruction* _ins)
+f_mkfd(f_server* _fs, Instruction* _ins)
 {
+    f_client* _fc = &(_fs->fc);
     char buffer[BUFF_SIZE];
 
     if(!_fc->auth) return -1;
@@ -530,8 +538,9 @@ f_mkfd(f_client* _fc, Instruction* _ins)
 }
 
 static int     
-f_rmfd(f_client* _fc, Instruction* _ins)
+f_rmfd(f_server* _fs, Instruction* _ins)
 {
+    f_client* _fc = &(_fs->fc);
     char buffer[BUFF_SIZE];
 
     if(!_fc->auth) return -1;
@@ -636,11 +645,10 @@ static int
 send_resp (f_client* _fc, uint8_t _flag)
 {
     BYTE response[5];
-    int n;
 
     memcpy(response, _fc->key, UI32_B);
     response[4] = _flag;
-    n = send_data(_fc->fd, response, 5);
+    send_data(_fc->fd, response, 5);
 
-    return n;
+    return 1;
 }
