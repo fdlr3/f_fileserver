@@ -13,14 +13,13 @@ typedef enum{
     if_PUSH             = 0x00,
     if_GET              = 0x01,
     if_REM              = 0x02,
-    if_UP               = 0x03,
-    if_DIR              = 0x04,
-    if_AUTH             = 0x05,
-    if_GO               = 0x06, //go to directory
-    if_REV              = 0x07, //Go back in directory
-    if_PATH             = 0x08,
-    if_MKFD             = 0x09,
-    if_RMFD             = 0x0A
+    if_DIR              = 0x03,
+    if_AUTH             = 0x04,
+    if_GO               = 0x05, //go to directory
+    if_REV              = 0x06, //Go back in directory
+    if_PATH             = 0x07,
+    if_MKFD             = 0x08,
+    if_RMFD             = 0x09
 } instruction_flag;
 
 
