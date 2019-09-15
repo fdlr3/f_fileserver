@@ -57,7 +57,7 @@ auth_user(const char* _conf_path, const char* _id, const char* _hash)
     get_tag(_conf_path, buffer, PW_TAG);
     PW_AUTH = strcmp(buffer, _hash);
     
-    return ID_AUTH && PW_AUTH;
+    return !(ID_AUTH && PW_AUTH);
 }
 
 

@@ -51,8 +51,6 @@ start_server (f_server* _server, const char* _port,
     clean_client(_server);
     //set config path
     strncpy(_server->config_path, _conf_path, BUFF_SIZE);
-    //start logger
-    start_logger(_server->config_path);
     //get port
     _server->port_num = atoi(_port);
     //set hostname
@@ -61,8 +59,11 @@ start_server (f_server* _server, const char* _port,
         exit(EXIT_FAILURE);
     }
     //get root and logs folder path
-    get_tag(_server->config_path, _server->logs_path, "LogPath");
-    get_tag(_server->config_path,_server->root_path, "RootPath");
+    get_tag(_server->config_path, _server->logs_path, LOGPATH_TAG);
+    get_tag(_server->config_path,_server->fc.f_directory, ROOTPATH_TAG);
+    _server->fc.fdir_len = strlen(_server->fc.f_directory);
+    //start logger
+    start_logger(_server->logs_path);
 
     //setup server struct
     struct sockaddr_in* sd = &(_server->server_addr);
@@ -70,20 +71,18 @@ start_server (f_server* _server, const char* _port,
     memcpy(&(_server->server_addr.sin_addr), he->h_addr_list[0], he->h_length);
     sd->sin_port = htons(_server->port_num);
 
-
     //opens a new socket 
     int* s_fd = &(_server->server_fd);
     *s_fd = socket(AF_INET, SOCK_STREAM, 0);
     if(*s_fd < 0){
-        
         Log("Error opening socket on address: %s with port: %u",
         inet_ntoa(sd->sin_addr),
-        (unsigned int)sd->sin_port);
+        _server->port_num);
         exit(EXIT_FAILURE);
     }
     Log("Opened socket on address: %s with port: %u.", 
     inet_ntoa(sd->sin_addr),
-    (unsigned int)sd->sin_port);
+    _server->port_num);
 
     //binds the local address to the socket
     if(bind(

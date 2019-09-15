@@ -29,6 +29,6 @@ typedef uint8_t BYTE;
 #define ID_TAG          "ID"
 #define PW_TAG          "PW"
 #define ROOTPATH_TAG    "RootPath"
-#define LogPATH_TAG     "LogPath"
+#define LOGPATH_TAG     "LogPath"
 
 #endif

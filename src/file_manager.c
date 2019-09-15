@@ -131,8 +131,8 @@ init_instruction(Instruction* _ins, BYTE* _barr)
             "Flag: %s\n"
             "Argument count %d\n"
             "File size: %d\n"
-            "Arg0: %s"
-            "Arg1: %s",
+            "Arg0: %s\n"
+            "Arg1: %s\n",
             get_ins_name(_ins->flag), _ins->flag_c, 
             _ins->file_size, _ins->arg0, _ins->arg1);
 
