@@ -108,7 +108,7 @@ init_instruction(Instruction* _ins, BYTE* _barr)
     
     //3. 4BYTE file size (uint32_t)
     memcpy(&(_ins->file_size), _barr+2, UI32_B);
-    if(_ins->flag == if_PUSH || _ins->flag == if_UP){
+    if(_ins->flag == if_PUSH){
         if(_ins->file_size == 0) return -1;
         if(_ins->file_size > MAX_FILE_SIZE) return -1;
     }
@@ -146,7 +146,6 @@ get_ins_name(instruction_flag _flag)
     switch(_flag){
         case if_PUSH:           return "PUSH";
         case if_GET:            return "GET";
-        case if_UP:             return "UPDATE";
         case if_REM:            return "REMOVE";
         case if_DIR:            return "DIRECTORY";
         case if_AUTH:           return "AUTHENTICATE";

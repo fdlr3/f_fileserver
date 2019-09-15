@@ -23,7 +23,6 @@ static int      send_resp   (f_client* _fc, uint8_t _flag);
 static int      f_push      (f_server* _fs, Instruction* _ins);
 static int      f_get       (f_server* _fs, Instruction* _ins);
 static int      f_rm        (f_server* _fs, Instruction* _ins);
-static int      f_up        (f_server* _fs, Instruction* _ins);
 static int      f_dir       (f_server* _fs, Instruction* _ins);
 static int      f_auth      (f_server* _fs, Instruction* _ins);
 static int      f_go        (f_server* _fs, Instruction* _ins);
@@ -190,13 +189,13 @@ server_IO(f_server* _fs)
         }
 
         if(result == -1 && 
-                !(ins.flag == if_PUSH || ins.flag == if_UP || ins.flag == if_AUTH)){
+                !(ins.flag == if_PUSH || ins.flag == if_AUTH)){
             n = send_resp(fc, FAIL);
             if (n == 0) {
                 result = 0;
             }
         } else if(result == 1 && 
-                !(ins.flag == if_PUSH || ins.flag == if_UP || ins.flag == if_AUTH)){
+                !(ins.flag == if_PUSH || ins.flag == if_AUTH)){
             n = send_resp(fc, SUCCESS);
             if (n == 0) {
                 result = 0;
