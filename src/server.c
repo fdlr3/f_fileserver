@@ -156,10 +156,6 @@ server_IO(f_server* _fs)
                 result = f_rm(_fs, &ins);
                 break;
             }
-            case if_UP:{
-                result = f_up(_fs, &ins);
-                break;
-            }
             case if_DIR:{ 
                 result = f_dir(_fs, &ins);
                 break;
@@ -323,48 +319,6 @@ f_rm(f_server* _fs, Instruction* _ins)
 
     if (remove(path_buff) == -1) return -1;
     return 1;
-}
-
-static int     
-f_up(f_server* _fs, Instruction* _ins)
-{
-    f_client* _fc = &(_fs->fc);
-    char path_buffe[BUFF_SIZE];
-    char path_buffu[BUFF_SIZE];
-    char* temp_eptr = NULL;
-    char* temp_uptr = NULL;
-    int n;
-
-    if(!_fc->auth) return -1;
-
-    temp_eptr = prepare_path(path_buffe, _fc, _ins->arg0);
-    temp_uptr = prepare_path(path_buffu, _fc, _ins->arg1);
-    if (temp_eptr == NULL || temp_uptr == NULL) return -1;
-
-    //1. Remove file
-    if (remove(path_buffe) == -1) return -1;
-
-    _ins->fptr = fopen(path_buffu, "w");
-    if (_ins->fptr == NULL) return -1;
-
-    //2. Send confirmation
-    n = send_resp(_fc, SUCCESS);
-    if (n == 0) {
-        fclose(_ins->fptr);
-        return 0;
-    }
-
-    //3. Read file
-    n = read_file(_ins->fptr, _fc, _ins->file_size);
-    if (n == 0) {
-        fclose(_ins->fptr);
-        remove(_ins->arg0);
-        return 0;
-    }
-    else {
-        fclose(_ins->fptr);
-        return 1;
-    }
 }
 
 static int
