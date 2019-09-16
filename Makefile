@@ -2,18 +2,6 @@
 CC=gcc
 CFLAGS=-c -Wall -Werror
 
-jernej: 
-	$(CC) -g -D JERNEJ_LINUX src/server.c src/logger.c src/file_manager.c \
-	src/config_reader.c main.c -o a.out
-
-droplet: 
-	$(CC) -g -D DROPLET_LINUX src/server.c src/logger.c src/file_manager.c \
-	src/config_reader.c main.c -o a.out
-
-duler: 
-	$(CC) -g -D FILIP_LINUX src/server.c src/logger.c src/file_manager.c \
-	src/config_reader.c main.c -o a.out
-
 a.out: obj/main.o obj/server.o obj/logger.o obj/file_manager.o obj/config_reader.o
 	$(CC) obj/server.o obj/logger.o obj/file_manager.o \
 	obj/config_reader.o obj/main.o -o a.out
