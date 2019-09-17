@@ -44,23 +44,45 @@ start_server (f_server* _server, const char* _port,
              const char* _hostname, const char* _conf_path)
 {
     struct hostent* he;
+    int n;
 
     memset(_server, 0, sizeof(f_server));
-    _server->fc.auth = false;
-    clean_client(_server);
+
+    if(!_port || !_hostname || !_conf_path){
+        perr("Error reading char** argv. Exiting..");
+    }
+
     //set config path
+    n = file_valid(_conf_path);
+    if(n == -1){
+        perr("Error config path is invalid. Exiting..");
+    }
     strncpy(_server->config_path, _conf_path, BUFF_SIZE);
+
     //get port
     _server->port_num = atoi(_port);
+    if(_server->port_num == 0){
+        perr("Error in parsing port number. Exiting..");
+    }
     //set hostname
     if ((he = gethostbyname(_hostname) ) == NULL ) {
-        puts("Error in hostname. Exiting..");
-        exit(EXIT_FAILURE);
+        perr("Error in hostname. Exiting..");
     }
-    //get root and logs folder path
-    get_tag(_server->config_path, _server->logs_path, LOGPATH_TAG);
+    //set root folder
     get_tag(_server->config_path,_server->fc.f_directory, ROOTPATH_TAG);
+    n = dir_valid(_server->fc.f_directory);
+    if(n == -1){
+        perr("Error root path doesnt exist. Exiting..");
+    }
     _server->fc.fdir_len = strlen(_server->fc.f_directory);
+
+    //set logs folder
+    get_tag(_server->config_path, _server->logs_path, LOGPATH_TAG);
+    n = dir_valid(_server->logs_path);
+    if(n == -1){
+        perr("Error log path doesnt exist. Exiting..");
+    }
+    
     //start logger
     start_logger(_server->logs_path);
 
@@ -74,31 +96,27 @@ start_server (f_server* _server, const char* _port,
     int* s_fd = &(_server->server_fd);
     *s_fd = socket(AF_INET, SOCK_STREAM, 0);
     if(*s_fd < 0){
-        Log("Error opening socket on address: %s with port: %u",
-        inet_ntoa(sd->sin_addr),
-        _server->port_num);
-        exit(EXIT_FAILURE);
+        perr("Error opening socket. Exiting..");
     }
-    Log("Opened socket on address: %s with port: %u.", 
-    inet_ntoa(sd->sin_addr),
-    _server->port_num);
 
     //binds the local address to the socket
     if(bind(
             *s_fd,
             (struct sockaddr*) &(_server->server_addr), 
             sizeof(struct sockaddr_in)) < 0){
-        Log("Failed binding local address to the socket.");
-        exit(EXIT_FAILURE);
+        perr("Error binding local address to the socket. Exiting..");
     }
-    Log("Successful bind to socket.");
+    Log("Opening and biding the socket was a success.");
+    Log("Address: %s\nPort: %u\nRoot path: %s\nLog path: %s\n",
+        inet_ntoa(sd->sin_addr), _server->port_num, 
+        _server->fc.f_directory, _server->logs_path);
 }
 
 void 
 listen_server(f_server* _server)
 {
     if (listen(_server->server_fd, 1) == -1) {
-        Log("Error listening for client.");
+        perr("Error listening for client.");
     }
     Log("Listening for new client.");
 
@@ -106,11 +124,11 @@ listen_server(f_server* _server)
                     (struct sockaddr *)&(_server->fc.addr),
                     &_server->fc.clilen);
     if (_server->server_fd < 0) {
-        Log("Error accepting cliet.");
+        perr("Error accepting cliet.");
     }
     Log("Client with address: %s and file descriptor: %u successfully accepted.",
-    inet_ntoa(_server->server_addr.sin_addr),
-    (unsigned int)_server->fc.fd);
+        inet_ntoa(_server->server_addr.sin_addr),
+        (unsigned int)_server->fc.fd);
 }
 
 void 

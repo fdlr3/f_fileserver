@@ -64,7 +64,7 @@ dir_valid(const char* _path)
         return 1;
     } else if (ENOENT == errno) {
         //doesnt exist
-        return 0;
+        return -1;
     } else {
         //something else
         return -1;
@@ -175,4 +175,17 @@ file_size(FILE *_fp)
     filelen = ftell(_fp); 
     fseek(_fp, 0, SEEK_SET); 
     return (uint32_t)filelen;
+}
+
+//returns 1 if the file is valid or -1 if invalid
+int file_valid(const char* _path)
+{
+    if(!_path) { return -1; }
+    FILE* fptr = fopen(_path, "r");
+    if(fptr){
+        fclose(fptr);
+        return 1;
+    } else {
+        return -1;
+    }
 }

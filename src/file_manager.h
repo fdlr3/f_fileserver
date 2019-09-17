@@ -60,6 +60,8 @@ uint32_t rnd_key();
 
 //returns file size
 uint32_t file_size(FILE *_fp);
+//returns 1 if the file is valid or -1 if invalid
+int file_valid(const char* _path);
 
 
 #endif
