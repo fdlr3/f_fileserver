@@ -107,7 +107,7 @@ start_server (f_server* _server, const char* _port,
         perr("Error binding local address to the socket. Exiting..");
     }
     Log("Opening and biding the socket was a success.");
-    Log("Address: %s\nPort: %u\nRoot path: %s\nLog path: %s\n",
+    Log("\nAddress: %s\nPort: %u\nRoot path: %s\nLog path: %s",
         inet_ntoa(sd->sin_addr), _server->port_num, 
         _server->fc.f_directory, _server->logs_path);
 }
