@@ -3,6 +3,7 @@
 
 #include <inttypes.h>
 #include <stdio.h>
+#include "logger.h"
 
 //define of BYTE
 typedef uint8_t BYTE;
@@ -30,5 +31,10 @@ typedef uint8_t BYTE;
 #define PW_TAG          "PW"
 #define ROOTPATH_TAG    "RootPath"
 #define LOGPATH_TAG     "LogPath"
+
+#define perr(x)\
+    puts(x);\
+    Log(x);\
+    exit(EXIT_SUCCESS);
 
 #endif
