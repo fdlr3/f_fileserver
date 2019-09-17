@@ -35,6 +35,6 @@ typedef uint8_t BYTE;
 #define perr(x)\
     puts(x);\
     Log(x);\
-    exit(EXIT_SUCCESS);
+    exit(0);
 
 #endif

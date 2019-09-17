@@ -601,8 +601,15 @@ prepare_path(char* _src, f_client *_fc, const char* _file)
     size_t dir_len    = _fc->fdir_len;
 
     //new path length is larger than 255 or file len is 0
-    if((file_len + dir_len + 1 > BUFF_SIZE) || file_len == 0){
+    if((file_len + dir_len + 2 > BUFF_SIZE) || file_len == 0){
         return NULL;
+    }
+
+    //if backslash doesnt exist add it
+    if(_fc->f_directory[dir_len - 1] != '/') {
+        _fc->f_directory[dir_len++] = '/';
+        _fc->f_directory[dir_len] = '\0'; 
+        _fc->fdir_len++; dir_len++;
     }
 
     memcpy(_src, _fc->f_directory, dir_len);
