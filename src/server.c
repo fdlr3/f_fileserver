@@ -59,7 +59,7 @@ start_server (f_server* _server, const char* _port,
     }
     strncpy(_server->config_path, _conf_path, BUFF_SIZE);
 
-    //get port
+    //set port
     _server->port_num = atoi(_port);
     if(_server->port_num == 0){
         perr("Error in parsing port number. Exiting..");
@@ -89,7 +89,12 @@ start_server (f_server* _server, const char* _port,
     //setup server struct
     struct sockaddr_in* sd = &(_server->server_addr);
     sd->sin_family = AF_INET;
-    memcpy(&(_server->server_addr.sin_addr), he->h_addr_list[0], he->h_length);
+    memcpy
+    (
+        &(_server->server_addr.sin_addr), 
+        he->h_addr_list[0], 
+        he->h_length
+    );
     sd->sin_port = htons(_server->port_num);
 
     //opens a new socket 
@@ -100,10 +105,10 @@ start_server (f_server* _server, const char* _port,
     }
 
     //binds the local address to the socket
-    if(bind(
-            *s_fd,
+    if(bind(*s_fd,
             (struct sockaddr*) &(_server->server_addr), 
-            sizeof(struct sockaddr_in)) < 0){
+            sizeof(struct sockaddr_in)) < 0
+        ){
         perr("Error binding local address to the socket. Exiting..");
     }
     Log("Opening and biding the socket was a success.");
@@ -120,9 +125,12 @@ listen_server(f_server* _server)
     }
     Log("Listening for new client.");
 
-    _server->fc.fd = accept(_server->server_fd,
-                    (struct sockaddr *)&(_server->fc.addr),
-                    &_server->fc.clilen);
+    _server->fc.fd = accept
+    (
+        _server->server_fd,
+        (struct sockaddr *)&(_server->fc.addr),
+        &_server->fc.clilen
+    );
     if (_server->server_fd < 0) {
         perr("Error accepting cliet.");
     }
@@ -154,8 +162,8 @@ server_IO(f_server* _fs)
         }
 
         //parse instruction
-        result = init_instruction(&ins, ins_buffer);
-        if(result == -1) {
+        n = init_instruction(&ins, ins_buffer);
+        if(n == -1) {
             Log("ERROR in instruction");
             continue;
         }
@@ -206,12 +214,14 @@ server_IO(f_server* _fs)
             }
         }
 
+        //error in execution (-1)
         if(result == -1 && 
                 !(ins.flag == if_PUSH || ins.flag == if_AUTH)){
             n = send_resp(fc, FAIL);
             if (n == 0) {
                 result = 0;
             }
+        //success in execution (1)
         } else if(result == 1 && 
                 !(ins.flag == if_PUSH || ins.flag == if_AUTH)){
             n = send_resp(fc, SUCCESS);
@@ -219,6 +229,7 @@ server_IO(f_server* _fs)
                 result = 0;
             }
         }
+        //client disconnected (0)
         if(result == 0){
             close(fc->fd);
             clean_client(_fs);
@@ -231,10 +242,10 @@ server_IO(f_server* _fs)
 void 
 close_server(f_server *_fs)
 {
-    close(_fs->server_fd);
+    shutdown(_fs->server_fd, SHUT_RDWR);
     close(_fs->fc.fd);
+    close(_fs->server_fd);
 }
-
 
 static void 
 clean_client(f_server *_fs)

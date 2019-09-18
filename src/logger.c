@@ -3,7 +3,7 @@
 #include <string.h>
 
 
-struct Logger{
+struct Logger {
     FILE* logfp;
     time_t start_time;
     char directory[256];
@@ -11,7 +11,9 @@ struct Logger{
 
 static struct Logger __log;
 
-void start_logger(const char* _log_path){    
+void 
+start_logger(const char* _log_path)
+{    
     struct tm* info;
 
     time(&(__log.start_time));
@@ -22,7 +24,9 @@ void start_logger(const char* _log_path){
     strcat(__log.directory, ".txt");
 }
 
-void Log(const char* format, ...){
+void 
+Log(const char* format, ...)
+{
     //open file
     __log.logfp = fopen(__log.directory, "a");
     if(__log.logfp == NULL){

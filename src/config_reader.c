@@ -8,7 +8,8 @@
 static char* get_tag_value(char* _dest_tag, char* _dest_value, const char* _src);
 
 char* 
-get_tag(const char* _conf_path, char* _dest, const char* _tag){
+get_tag(const char* _conf_path, char* _dest, const char* _tag)
+{
     FILE*       fp          = fopen(_conf_path, "r");
     char *      line        = NULL;
     size_t      len         = 0;
