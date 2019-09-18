@@ -222,6 +222,7 @@ server_IO(f_server* _fs)
             if (n == 0) {
                 result = 0;
             }
+            Log("Instruction was successfully executed.");
         //success in execution (1)
         } else if(result == 1 && 
                 !(ins.flag == if_PUSH || ins.flag == if_AUTH)){
@@ -229,6 +230,7 @@ server_IO(f_server* _fs)
             if (n == 0) {
                 result = 0;
             }
+            Log("Instruction execution encountered an error.");
         }
         //client disconnected (0)
         if(result == 0){
