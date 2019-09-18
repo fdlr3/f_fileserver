@@ -75,6 +75,7 @@ start_server (f_server* _server, const char* _port,
         perr("Error root path doesnt exist. Exiting..");
     }
     _server->fc.fdir_len = strlen(_server->fc.f_directory);
+    strcpy(_server->root_path, _server->fc.f_directory);
 
     //set logs folder
     get_tag(_server->config_path, _server->logs_path, LOGPATH_TAG);
