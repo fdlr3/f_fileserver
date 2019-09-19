@@ -135,7 +135,7 @@ listen_server(f_server* _server)
         &_server->fc.clilen
     );
     if (_server->server_fd < 0) {
-        perr("Error accepting cliet.");
+        perr("Error accepting client.");
     }
     Log("Client with address: %s and file descriptor: %u successfully accepted.",
         inet_ntoa(_server->server_addr.sin_addr),
@@ -224,7 +224,7 @@ server_IO(f_server* _fs)
             if (n == 0) {
                 result = 0;
             }
-            Log("Instruction was successfully executed.");
+            Log("Instruction execution encountered an error.");
         //success in execution (1)
         } else if(result == 1 && 
                 !(ins.flag == if_PUSH || ins.flag == if_AUTH)){
@@ -232,7 +232,7 @@ server_IO(f_server* _fs)
             if (n == 0) {
                 result = 0;
             }
-            Log("Instruction execution encountered an error.");
+            Log("Instruction was successfully executed.");
         }
         //client disconnected (0)
         if(result == 0){
