@@ -145,14 +145,14 @@ listen_server(f_server* _server)
 void 
 server_IO(f_server* _fs)
 {
-    Log("Started listening for incoming instructions.");
-
     f_client*   fc = &(_fs->fc);
     Instruction ins;
     BYTE        ins_buffer[INS_SIZE];
     int         n;
     int         result;
+
     while(1){
+        Log("Started listening for incoming instructions.");
         //read instruction
         n = read_data(fc->fd, ins_buffer, INS_SIZE);
 
