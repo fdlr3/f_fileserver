@@ -45,8 +45,7 @@ typedef struct {
     
 } f_server;
 
-void    start_server    (f_server* _server, const char* _port, 
-                        const char* _hostname, const char* _conf_path);
+void    start_server    (f_server* _server, const char* _conf_path);
 void    listen_server   (f_server* _server);
 void    server_IO       (f_server *_fs);
 void    close_server    (f_server *_fs);

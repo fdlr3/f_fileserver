@@ -40,15 +40,15 @@ static int      read_file   (FILE *_fp, f_client* _fc, size_t _size);
 
 
 void 
-start_server (f_server* _server, const char* _port, 
-             const char* _hostname, const char* _conf_path)
+start_server (f_server* _server, const char* _conf_path)
 {
     struct hostent* he;
+    char buffer[BUFF_SIZE];
     int n;
 
     memset(_server, 0, sizeof(f_server));
 
-    if(!_port || !_hostname || !_conf_path){
+    if(!_conf_path){
         perr("Error reading char** argv. Exiting..");
     }
 
@@ -60,12 +60,14 @@ start_server (f_server* _server, const char* _port,
     strncpy(_server->config_path, _conf_path, BUFF_SIZE);
 
     //set port
-    _server->port_num = atoi(_port);
+    get_tag(_server->config_path, buffer, PORT_TAG);
+    _server->port_num = atoi(buffer);
     if(_server->port_num == 0){
         perr("Error in parsing port number. Exiting..");
     }
     //set hostname
-    if ((he = gethostbyname(_hostname) ) == NULL ) {
+    get_tag(_server->config_path, buffer, HOST_TAG);
+    if ((he = gethostbyname(buffer) ) == NULL ) {
         perr("Error in hostname. Exiting..");
     }
     //set root folder

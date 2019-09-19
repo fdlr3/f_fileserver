@@ -8,12 +8,12 @@
 #define PORT_N 1553
 
 int main(int argc, char **argv){
-    if(argc != 4) {
+    if(argc != 2) {
         puts("Error in argument count. Exiting");
         exit(EXIT_SUCCESS);
     }
     f_server server;
-    start_server(&server, argv[1], argv[2], argv[3]);
+    start_server(&server, argv[1]);
 
     while(1){
         listen_server(&server);

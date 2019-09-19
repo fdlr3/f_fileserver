@@ -68,7 +68,7 @@ static char*
 get_tag_value(char* _dest_tag, char* _dest_value, const char* _src)
 {
     char temp_buffer[BUFF_SIZE];
-    memcpy(temp_buffer, _src, strlen(_src));
+    memcpy(temp_buffer, _src, strlen(_src) + 1);
 
     char* pt = strchr(temp_buffer, ' ');
     if(!pt){
